@@ -23,20 +23,28 @@
   var PREF_KEY = 'vq.voice.v1';
 
   /* ─────────── ค่าที่จำไว้ในเครื่อง ─────────── */
-  var pref = { on: false, readChoices: true, readStory: true };
+  /* listenLang: ระบบฟังของเบราว์เซอร์ฟังได้ทีละภาษา ไม่แยกเองว่าพูดไทยหรืออังกฤษ
+     ตั้งเป็นอังกฤษไว้ก่อน (ผู้ใช้ขอ 11 พ.ย.) — พูด one/two/three/four หรือคำอังกฤษ
+     เปลี่ยนเป็นไทยได้ใน ⚙ ถ้าอยากพูดความหมายภาษาไทย */
+  var pref = { on: false, readChoices: true, readStory: true, listenLang: 'en', beep: true };
   try {
     var saved = JSON.parse(localStorage.getItem(PREF_KEY) || 'null');
     if (saved && typeof saved === 'object') {
       if (typeof saved.readChoices === 'boolean') pref.readChoices = saved.readChoices;
       if (typeof saved.readStory === 'boolean') pref.readStory = saved.readStory;
+      if (saved.listenLang === 'th' || saved.listenLang === 'en') pref.listenLang = saved.listenLang;
+      if (typeof saved.beep === 'boolean') pref.beep = saved.beep;
       // ไม่เปิดโหมดเสียงเองตอนโหลดหน้า: เบราว์เซอร์ต้องการการแตะก่อนจึงจะพูด/ขอไมค์ได้
     }
   } catch (e) {}
   function savePref() {
     try {
-      localStorage.setItem(PREF_KEY, JSON.stringify({ readChoices: pref.readChoices, readStory: pref.readStory }));
+      localStorage.setItem(PREF_KEY, JSON.stringify({
+        readChoices: pref.readChoices, readStory: pref.readStory, listenLang: pref.listenLang, beep: pref.beep
+      }));
     } catch (e) {}
   }
+  function isEn() { return pref.listenLang === 'en'; }
 
   /* ─────────── ตัวช่วยทั่วไป ─────────── */
   function $(id) { return document.getElementById(id); }
@@ -56,33 +64,41 @@
 
   /* ═══════════ การจับคำพูด ═══════════ */
 
-  function norm(s) {
+  // ตัวเล็ก ตัดวงเล็บ/เครื่องหมาย เหลือช่องว่างเดียวระหว่างคำ (ยังแยกคำอังกฤษได้)
+  function normSp(s) {
     s = String(s || '').toLowerCase();
     s = s.replace(/\([^)]*\)/g, ' ');
-    s = s.replace(/[.,!?'"“”‘’()\[\]\-–—\/;:…·~]/g, ' ');
-    s = s.replace(/\s+/g, '');
+    s = s.replace(/['‘’]/g, '');   // it's → its
+    s = s.replace(/[.,!?"“”()\[\]\-–—\/;:…·~#]/g, ' ');
+    s = s.replace(/\s+/g, ' ').trim();
     // คำลงท้ายสุภาพไม่ใช่ส่วนของคำตอบ
-    s = s.replace(/(ครับผม|ครับ|ค่ะ|คะ|ค่า|นะคะ|นะครับ|นะ|จ้ะ|จ้า)$/, '');
+    s = s.replace(/\s*(ครับผม|ครับ|ค่ะ|คะ|ค่า|นะคะ|นะครับ|นะ|จ้ะ|จ้า|please)$/, '');
     return s;
   }
-  // ตัดคำนำหน้าแบบ "ข้อ สอง", "ตอบ ข้อ ค", "เลือกอันที่สาม"
-  function stripLead(s) {
-    var prev;
-    do {
-      prev = s;
-      s = s.replace(/^(คำตอบคือ|คำตอบ|ตอบว่า|ตอบ|เลือกข้อ|เลือก|ข้อที่|ข้อ|อันที่|อัน|ตัวเลือกที่|ตัวเลือก|เบอร์|หมายเลข|number|choice|answer)/, '');
-    } while (s !== prev && s);
-    return s;
-  }
+  function norm(s) { return normSp(s).replace(/\s+/g, ''); }
 
+  /* คำนำหน้าภาษาอังกฤษตัดเฉพาะเมื่อเป็น "คำ" เต็ม ๆ ตามด้วยช่องว่าง
+     (ตัดแบบติดกันจะทำให้ island → land, notice → tice) */
+  var LEAD_EN = /^(?:(?:the answer is|answer is|its|it is|i choose|i want|i pick|i mean|number|no|choice|option|answer|letter|the|is|uh|um|ok|okay)\s+)+/;
+  // คำนำหน้าภาษาไทยใช้กับการอ่านเลขข้อเท่านั้น ("ข้อ" อยู่ต้นคำอย่าง "ข้อมูล" ได้)
+  var LEAD_TH_NUM = /^(?:คำตอบคือ|คำตอบ|ตอบว่า|ตอบ|เลือกข้อ|เลือก|ข้อที่|ข้อ|อันที่|อัน|ตัวเลือกที่|ตัวเลือก|เบอร์|หมายเลข)+/;
+  var LEAD_TH = /^(?:คำตอบคือ|ตอบว่า)/;
+  function stripLead(s) { return normSp(s).replace(LEAD_EN, '').replace(/\s+/g, '').replace(LEAD_TH, ''); }
+
+  /* ระบบฟังภาษาอังกฤษมักเขียนเลขสั้น ๆ ผิดเป็นคำพ้องเสียง ("two" → to/too, "four" → for)
+     จึงรับคำพ้องเสียงที่พบบ่อยด้วย · ตัวอักษร A–D ตรงกับ ก–ข–ค–ง บนปุ่ม */
   var NUM = {
-    '1': 0, '๑': 0, 'หนึ่ง': 0, 'นึง': 0, 'ที่หนึ่ง': 0, 'ก': 0, 'กอ': 0, 'กอไก่': 0, 'ก.': 0, 'one': 0, 'won': 0,
-    '2': 1, '๒': 1, 'สอง': 1, 'ที่สอง': 1, 'ข': 1, 'ขอ': 1, 'ขอไข่': 1, 'two': 1, 'to': 1, 'too': 1,
-    '3': 2, '๓': 2, 'สาม': 2, 'ที่สาม': 2, 'ค': 2, 'คอ': 2, 'คอควาย': 2, 'three': 2, 'tree': 2,
-    '4': 3, '๔': 3, 'สี่': 3, 'ที่สี่': 3, 'ง': 3, 'งอ': 3, 'งองู': 3, 'four': 3, 'for': 3
+    '1': 0, '๑': 0, 'หนึ่ง': 0, 'นึง': 0, 'ที่หนึ่ง': 0, 'ก': 0, 'กอ': 0, 'กอไก่': 0,
+    'one': 0, 'won': 0, 'wan': 0, 'juan': 0, 'first': 0, 'a': 0, 'eh': 0, 'hey': 0, 'ay': 0,
+    '2': 1, '๒': 1, 'สอง': 1, 'ที่สอง': 1, 'ข': 1, 'ขอ': 1, 'ขอไข่': 1,
+    'two': 1, 'to': 1, 'too': 1, 'tu': 1, 'second': 1, 'b': 1, 'be': 1, 'bee': 1, 'bea': 1,
+    '3': 2, '๓': 2, 'สาม': 2, 'ที่สาม': 2, 'ค': 2, 'คอ': 2, 'คอควาย': 2,
+    'three': 2, 'tree': 2, 'free': 2, 'third': 2, 'c': 2, 'see': 2, 'sea': 2, 'she': 2,
+    '4': 3, '๔': 3, 'สี่': 3, 'ที่สี่': 3, 'ง': 3, 'งอ': 3, 'งองู': 3,
+    'four': 3, 'for': 3, 'fore': 3, 'fourth': 3, 'forth': 3, 'd': 3, 'dee': 3
   };
   function parseNumber(raw) {
-    var s = stripLead(norm(raw));
+    var s = stripLead(raw).replace(LEAD_TH_NUM, '');
     if (Object.prototype.hasOwnProperty.call(NUM, s)) return NUM[s];
     return -1;
   }
@@ -119,7 +135,7 @@
     var i, j, p;
     // ตรงกับข้อความบนปุ่มเป๊ะ ๆ ชนะเสมอ — เผื่อความหมายเป็นคำอย่าง "สอง" ของคำว่า two
     for (i = 0; i < alts.length; i++) {
-      var exact = stripLead(norm(alts[i]));
+      var exact = stripLead(alts[i]);
       for (j = 0; j < choices.length; j++) {
         if (exact && exact === norm(choices[j])) return { pos: j, by: 'exact', heard: alts[i] };
       }
@@ -130,7 +146,7 @@
     }
     var best = -1, bestSc = 0, second = 0, heard = '';
     for (i = 0; i < alts.length; i++) {
-      var u = stripLead(norm(alts[i]));
+      var u = stripLead(alts[i]);
       if (!u) continue;
       var scores = choices.map(function (c) {
         var parts = partsOf(c), m = 0;
@@ -153,15 +169,18 @@
   }
 
   var CMD = {
-    repeat: ['อีกครั้ง', 'ซ้ำ', 'ฟังอีก', 'ฟังอีกครั้ง', 'อ่านใหม่', 'อ่านอีกครั้ง', 'พูดอีกครั้ง', 'อะไรนะ', 'repeat', 'again'],
-    stop: ['หยุด', 'หยุดฟัง', 'ปิดเสียง', 'ปิดโหมดเสียง', 'เลิกฟัง', 'stop'],
-    next: ['ไปต่อ', 'ต่อ', 'ต่อไป', 'ถัดไป', 'เล่นต่อ', 'สเตจถัดไป', 'ด่านถัดไป', 'ฝึกอีกครั้ง', 'ทบทวนอีกรอบ', 'next', 'continue'],
-    ok: ['ตกลง', 'โอเค', 'ok', 'okay', 'รับ', 'รับรางวัล', 'รับกล่องรางวัล', 'ยินดีที่ได้เจอกัน', 'ปิด', 'ต่อ', 'ไปต่อ', 'ถัดไป'],
-    map: ['แผนที่', 'กลับแผนที่', 'กลับ', 'กลับไปแผนที่'],
-    normal: ['ปกติ', 'โหมดปกติ', 'ธรรมดา'],
-    hard: ['ยาก', 'โหมดยาก'],
-    cancel: ['ยกเลิก'],
-    skip: ['ข้าม', 'ข้ามฉาก', 'ข้ามฉากนี้']
+    repeat: ['อีกครั้ง', 'ซ้ำ', 'ฟังอีก', 'ฟังอีกครั้ง', 'อ่านใหม่', 'อ่านอีกครั้ง', 'พูดอีกครั้ง', 'อะไรนะ',
+      'repeat', 'again', 'say again', 'say it again', 'one more time', 'what', 'pardon', 'sorry', 'read again'],
+    stop: ['หยุด', 'หยุดฟัง', 'ปิดเสียง', 'ปิดโหมดเสียง', 'เลิกฟัง', 'stop', 'stop listening', 'voice off', 'quit'],
+    next: ['ไปต่อ', 'ต่อ', 'ต่อไป', 'ถัดไป', 'เล่นต่อ', 'สเตจถัดไป', 'ด่านถัดไป', 'ฝึกอีกครั้ง', 'ทบทวนอีกรอบ',
+      'next', 'continue', 'go', 'go on', 'next stage', 'next one', 'keep going', 'play', 'play again', 'try again', 'retry', 'yes'],
+    ok: ['ตกลง', 'โอเค', 'รับ', 'รับรางวัล', 'รับกล่องรางวัล', 'ยินดีที่ได้เจอกัน', 'ปิด', 'ต่อ', 'ไปต่อ', 'ถัดไป',
+      'ok', 'okay', 'o k', 'yes', 'yeah', 'got it', 'close', 'next', 'continue', 'go', 'thanks', 'thank you'],
+    map: ['แผนที่', 'กลับแผนที่', 'กลับ', 'กลับไปแผนที่', 'map', 'the map', 'back', 'go back', 'back to map', 'home'],
+    normal: ['ปกติ', 'โหมดปกติ', 'ธรรมดา', 'normal', 'normal mode', 'easy'],
+    hard: ['ยาก', 'โหมดยาก', 'hard', 'hard mode'],
+    cancel: ['ยกเลิก', 'cancel', 'no'],
+    skip: ['ข้าม', 'ข้ามฉาก', 'ข้ามฉากนี้', 'skip']
   };
   function isCmd(alts, name) {
     var list = CMD[name];
@@ -238,43 +257,87 @@
 
   /* ═══════════ การฟัง ═══════════ */
 
-  var rec = null, recGen = 0, silentRounds = 0;
+  /* ── เสียงสัญญาณสั้น ๆ ──
+     "ติ๊ง" ขึ้น = ไมค์เปิดจริงแล้ว พูดได้ · "ตึ้ด" ต่ำ = ได้ยินแต่จับคำตอบไม่ได้ ให้พูดใหม่
+     แทนประโยคยาว ๆ ซึ่งเดิมกินเวลา 2 วินาทีและปิดไมค์ระหว่างนั้น (ผู้เล่นพูดซ้ำทับพอดีเลยหาย) */
+  var audioCtx = null;
+  function unlockAudio() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!audioCtx && AC) audioCtx = new AC();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {}
+  }
+  function tone(freqs, ms) {
+    if (!pref.beep || !audioCtx) return;
+    try {
+      var t = audioCtx.currentTime;
+      freqs.forEach(function (f, i) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain(), t0 = t + i * (ms / 1000 + 0.03);
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t0);
+        g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + ms / 1000);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(t0); o.stop(t0 + ms / 1000 + 0.02);
+      });
+    } catch (e) {}
+  }
+  function beepReady() { tone([880, 1320], 70); }
+  function beepMiss() { tone([330, 247], 110); }
+
+  /* ── ระบบฟัง ──
+     ของเดิม (ก่อน 11 พ.ย.) ฟังทีละประโยค (continuous=false) แล้วเปิดใหม่ทุกครั้งที่จบ
+     และขึ้น "พูดได้เลย" ตั้งแต่สั่ง start ทั้งที่ไมค์ยังไม่เปิด + ค้างคำนั้นไว้ระหว่างรอเปิดรอบใหม่
+     (เงียบเกิน 6 รอบรอถึง 2 วินาที) คำที่พูดในช่วงนั้นหายเงียบ = "บางทีต้องพูดหลายรอบ"
+     ตอนนี้: ฟังต่อเนื่องรอบยาว (continuous=true) · บอก "พูดได้เลย" + ติ๊ง เฉพาะตอนไมค์เปิดจริง
+     (onaudiostart) · ระหว่างรอเปิดใหม่ขึ้นว่า "รอสักครู่" · เปิดใหม่ทันทีไม่หน่วง */
+  var rec = null, recGen = 0, missCount = 0;
   var fakeMic = false, fakeDeliver = null;   // ทดสอบในเบราว์เซอร์โดยไม่ใช้ไมค์จริง
   function stopListening() {
     recGen++;
     fakeDeliver = null;
     if (rec) { try { rec.abort(); } catch (e) {} rec = null; }
   }
-  /* onHeard(alts) คืน true = จัดการแล้ว ไม่ต้องฟังต่อ · false = ฟังต่อ */
+  /* onHeard(alts) คืน true = จัดการแล้ว เลิกฟัง · false = ฟังต่อ (ไมค์ยังเปิดอยู่) */
   function listen(onHeard) {
     if (!state.on || (!SR && !fakeMic)) return;
     stopListening();
-    var g = recGen, handled = false;
+    var g = recGen, handled = false, announced = false;
     function deliver(alts) {
-      if (g !== recGen) return;
-      silentRounds = 0;
+      if (g !== recGen || handled) return;
       showHeard(alts[0]);
       if (isCmd(alts, 'stop')) { handled = true; setOn(false); return; }
       handled = !!onHeard(alts);
+      if (handled && rec && g === recGen) { try { rec.abort(); } catch (e) {} }
     }
     if (fakeMic) {
-      fakeDeliver = function (alts) {
-        deliver(alts);
-        if (!handled && g === recGen && state.on) listen(onHeard);
-      };
+      fakeDeliver = function (alts) { deliver(alts); };
       setStatus('listen');
       return;
     }
     var r;
     try { r = new SR(); } catch (e) { return; }
-    r.lang = 'th-TH';
-    r.interimResults = false;
-    r.continuous = false;
+    r.lang = isEn() ? 'en-US' : 'th-TH';
+    r.interimResults = true;     // เห็นคำที่กำลังได้ยินบนแถบสถานะ รู้ว่าไมค์รับเสียงอยู่
+    r.continuous = true;
     r.maxAlternatives = 5;
+    r.onaudiostart = function () {
+      if (g !== recGen || announced) return;
+      announced = true;
+      setStatus('listen');
+      beepReady();
+    };
     r.onresult = function (e) {
-      var res = e.results[e.results.length - 1], alts = [];
-      for (var i = 0; i < res.length; i++) alts.push(res[i].transcript);
-      deliver(alts);
+      if (g !== recGen || handled) return;
+      for (var k = e.resultIndex; k < e.results.length; k++) {
+        var res = e.results[k];
+        if (!res.isFinal) { showHeard(res[0].transcript + ' …'); continue; }
+        var alts = [];
+        for (var i = 0; i < res.length; i++) alts.push(res[i].transcript);
+        deliver(alts);
+        if (handled) return;
+      }
     };
     r.onerror = function (e) {
       if (g !== recGen) return;
@@ -282,19 +345,21 @@
         handled = true;
         setOn(false);
         showMsg('ยังไม่ได้รับอนุญาตให้ใช้ไมโครโฟน · กดอนุญาตที่แถบที่อยู่เว็บ แล้วเปิดโหมดเสียงอีกครั้ง');
-      } else if (e.error === 'no-speech') {
-        silentRounds++;
+      } else if (e.error === 'audio-capture') {
+        showMsg('ไม่พบไมโครโฟน หรือมีแอปอื่นใช้ไมค์อยู่');
+      } else if (e.error === 'network') {
+        showMsg('ระบบฟังเสียงต้องใช้อินเทอร์เน็ต · เน็ตหลุดอยู่หรือเปล่า');
       }
     };
     r.onend = function () {
       if (g !== recGen) return;
       rec = null;
       if (handled || !state.on) { setStatus('idle'); return; }
-      // เงียบนาน ๆ ก็ยังฟังต่อ แต่เว้นระยะห่างขึ้น เพื่อไม่ให้เครื่องส่งเสียงเริ่มฟังถี่เกินไป
-      var wait = silentRounds > 6 ? 2000 : 250;
-      setTimeout(function () { if (g === recGen && state.on) listen(onHeard); }, wait);
+      setStatus('wait');
+      setTimeout(function () { if (g === recGen && state.on) listen(onHeard); }, 60);
     };
-    try { r.start(); rec = r; setStatus('listen'); } catch (e) { setStatus('idle'); }
+    setStatus('wait');
+    try { r.start(); rec = r; } catch (e) { setStatus('idle'); }
   }
 
   /* ═══════════ อ่านว่าจออยู่ในสถานะไหน ═══════════ */
@@ -349,13 +414,24 @@
         setTimeout(function () { feedback(b); }, 80);
         return true;
       }
-      say([m.ambiguous ? 'ยังไม่แน่ใจ ลองพูดเลขข้อ หนึ่ง ถึง สี่' : 'ไม่ได้ยินชัด ลองอีกครั้ง'], function () {
-        if (lastKey === key) listen(heard);
-      });
-      return true;
+      /* จับคำตอบไม่ได้: ส่งเสียง "ตึ้ด" แล้วฟังต่อทันทีโดยไม่ปิดไมค์
+         พูดคำแนะนำยาว ๆ เฉพาะเมื่อพลาดติดกันหลายครั้ง หรือได้ยินก้ำกึ่งระหว่างสองข้อ */
+      missCount++;
+      if (m.ambiguous || missCount % 3 === 0) {
+        say(numberHint(m.ambiguous), function () { if (lastKey === key) listen(heard); });
+        return true;
+      }
+      beepMiss();
+      return false;
     };
   }
+  function numberHint(ambiguous) {
+    var head = ambiguous ? 'ยังไม่แน่ใจว่าข้อไหน' : 'ยังจับคำตอบไม่ได้';
+    return isEn() ? [head, 'ลองพูดว่า', 'number one', 'ถึง', 'number four']
+                  : [head, 'ลองพูดเลขข้อ หนึ่ง ถึง สี่'];
+  }
   function feedback(btn) {
+    missCount = 0;
     if (btn.classList.contains('correct')) { say(['ถูกต้อง'], afterSpeech); return; }
     var right = document.querySelector('#choices .choice.correct span');
     say(['ยังไม่ใช่', right ? 'คำตอบคือ ' + txt(right) : ''], afterSpeech);
@@ -363,7 +439,9 @@
 
   function onResult(ctx) {
     var nextLabel = txt($('btn-result-next')) || 'ไปต่อ';
-    say([txt($('result-title')), 'พูดว่า ไปต่อ เพื่อ' + nextLabel + ' หรือ แผนที่ เพื่อกลับแผนที่'], function () {
+    var how = isEn() ? ['พูดว่า', 'next', 'เพื่อ' + nextLabel, 'หรือ', 'map', 'เพื่อกลับแผนที่']
+                     : ['พูดว่า ไปต่อ เพื่อ' + nextLabel + ' หรือ แผนที่ เพื่อกลับแผนที่'];
+    say([txt($('result-title'))].concat(how), function () {
       listenFor(ctx.key, [
         ['next', function () { click('btn-result-next'); }],
         ['map', function () { click('btn-result-map'); }]
@@ -371,7 +449,7 @@
     });
   }
   function onMode(ctx) {
-    say(['เลือกโหมด พูดว่า ปกติ หรือ ยาก'], function () {
+    say(isEn() ? ['เลือกโหมด พูดว่า', 'normal', 'หรือ', 'hard'] : ['เลือกโหมด พูดว่า ปกติ หรือ ยาก'], function () {
       listenFor(ctx.key, [
         ['normal', function () { click('btn-mode-normal'); }],
         ['hard', function () { click('btn-mode-hard'); }],
@@ -382,7 +460,7 @@
   function onPopup(ctx) {
     var title = txt(ctx.el.querySelector('h2'));
     var btn = ctx.el.querySelector('.btn-primary') || ctx.el.querySelector('button');
-    say([title, 'พูดว่า ตกลง เพื่อไปต่อ'], function () {
+    say([title].concat(isEn() ? ['พูดว่า', 'okay', 'เพื่อไปต่อ'] : ['พูดว่า ตกลง เพื่อไปต่อ']), function () {
       listenFor(ctx.key, [['ok', function () { if (btn && visible(btn)) btn.click(); }]]);
     });
   }
@@ -393,6 +471,7 @@
       for (var i = 0; i < table.length; i++) {
         if (isCmd(alts, table[i][0])) { table[i][1](); return true; }
       }
+      beepMiss();
       return false;
     });
   }
@@ -444,7 +523,8 @@
   }
   function speakQuestion(ctx, choices) {
     var wordEl = $('word'), word = txt(wordEl), parts = [];
-    var NUMS = ['หนึ่ง', 'สอง', 'สาม', 'สี่'];
+    // อ่านเลขข้อเป็นภาษาเดียวกับที่ระบบฟังอยู่ ผู้เล่นจะได้พูดตามได้เลย
+    var NUMS = isEn() ? ['one', 'two', 'three', 'four'] : ['หนึ่ง', 'สอง', 'สาม', 'สี่'];
     if (wordEl && wordEl.classList.contains('audio')) {
       parts.push(function () {
         var b = $('btn-speak');
@@ -457,10 +537,15 @@
     if (pref.readChoices) {
       for (var i = 0; i < choices.length; i++) {
         parts.push(pause(120));
-        parts.push(NUMS[i] + ' ' + (langOf(choices[i]) === 'th-TH' ? choices[i] : ''));
-        if (langOf(choices[i]) !== 'th-TH') parts.push(choices[i]);
+        if (langOf(NUMS[i]) === langOf(choices[i])) {
+          parts.push(NUMS[i] + ' ' + choices[i]);
+        } else {
+          parts.push(NUMS[i]);
+          parts.push(choices[i]);
+        }
       }
     }
+    missCount = 0;
     var heard = questionListener(ctx, choices);
     say(parts, function () { if (lastKey === ctx.key) listen(heard); });
   }
@@ -500,6 +585,7 @@
       return;
     }
     state.on = on;
+    if (on) unlockAudio();   // ต้องสร้างเสียงสัญญาณในจังหวะที่ผู้เล่นแตะ
     ui.btn.classList.toggle('on', on);
     ui.btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     ui.panel.hidden = !on;
@@ -546,6 +632,7 @@
       '.vqv-top{display:flex;align-items:center;gap:8px}',
       '.vqv-gear{margin-left:auto;background:none;border:0;color:#fff;font-size:15px;cursor:pointer;padding:2px 4px}',
       '.vqv-opts label{display:flex;align-items:center;gap:4px;cursor:pointer}',
+      '.vqv-opts select{color:#1d2b3a;background:#fff;border:0;border-radius:6px;font:inherit;padding:1px 4px}',
       '.vqv-msg{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;z-index:9001;background:#1d2b3a;color:#fff;padding:10px 14px;border-radius:12px;font:14px/1.5 system-ui,"Noto Sans Thai",sans-serif;max-width:calc(100vw - 32px);text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.3)}'
     ].join('\n');
     document.head.appendChild(css);
@@ -569,10 +656,19 @@
       '<div class="vqv-opts">' +
       '<label><input type="checkbox" data-k="readChoices"> อ่านตัวเลือก</label>' +
       '<label><input type="checkbox" data-k="readStory"> อ่านเนื้อเรื่อง</label>' +
+      '<label><input type="checkbox" data-k="beep"> เสียงติ๊งตอนเริ่มฟัง</label>' +
+      '<label>ฟังภาษา <select data-k="listenLang"><option value="en">อังกฤษ</option><option value="th">ไทย</option></select></label>' +
       '</div>';
     panel.querySelectorAll('input[data-k]').forEach(function (cb) {
       cb.checked = !!pref[cb.dataset.k];
       cb.addEventListener('change', function () { pref[cb.dataset.k] = cb.checked; savePref(); });
+    });
+    var langSel = panel.querySelector('select[data-k="listenLang"]');
+    langSel.value = pref.listenLang;
+    langSel.addEventListener('change', function () {
+      pref.listenLang = langSel.value === 'th' ? 'th' : 'en';
+      savePref();
+      if (state.on) { lastKey = ''; tick(); }   // เริ่มฟังใหม่ด้วยภาษาที่เลือก
     });
 
     var gear = panel.querySelector('.vqv-gear');
@@ -587,7 +683,7 @@
     ui.status = panel.querySelector('.vqv-status');
     ui.heard = panel.querySelector('.vqv-heard');
   }
-  var STATUS = { off: '🎤 โหมดเสียง', idle: '🎤 โหมดเสียงเปิดอยู่', speak: '🔊 กำลังอ่าน…', listen: '👂 พูดได้เลย…' };
+  var STATUS = { off: '🎤 โหมดเสียง', idle: '🎤 โหมดเสียงเปิดอยู่', speak: '🔊 กำลังอ่าน… รอฟังก่อน', wait: '⏳ กำลังเปิดไมค์…', listen: '👂 พูดได้เลย' };
   function setStatus(s) {
     if (!ui.btn) return;
     ui.btn.classList.toggle('listen', s === 'listen');
