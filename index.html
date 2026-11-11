@@ -15682,6 +15682,7 @@ function ttsReady() { return !!window.speechSynthesis; }
 // ท่าประจันเปิดตลอด ท่าอื่นปิดได้ในหน้าตั้งค่า · ท่าสดับเสียงต้องมีเสียงอ่านในเครื่อง
 function stanceOn(id) {
   if (id === 'clash') return true;
+  if (id === 'spell' && window.VQVoice && VQVoice.active()) return false;
   var m = save.set.stances || {};
   if (m[id] === false) return false;
   if (id === 'listen') return ttsReady();
@@ -16793,6 +16794,7 @@ function startTimer() {
 }
 function tick() {
   if (!B || B.locked || !B.duration) return;
+  if (window.VQVoice && VQVoice.active()) { B.duration = 0; var vqTf = $('timer-fill'); vqTf.style.width = '100%'; vqTf.classList.remove('warn'); return; }
   var left = B.deadline - performance.now();
   var ratio = Math.max(0, left / B.duration);
   var fill = $('timer-fill');
@@ -19622,5 +19624,6 @@ v12PetSetup();
 })();
 
 </script>
+<script src="voice.a0c12ee4ba8f.js"></script>
 </body>
 </html>
