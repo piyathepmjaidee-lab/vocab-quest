@@ -98,7 +98,7 @@
     'four': 3, 'for': 3, 'fore': 3, 'fourth': 3, 'forth': 3, 'd': 3, 'dee': 3
   };
   function parseNumber(raw) {
-    var s = stripLead(raw).replace(LEAD_TH_NUM, '');
+    var s = stripLead(raw).replace(LEAD_TH_NUM, '').replace(/^(?:number|no|option|choice|letter)(?=[0-9]$)/, '');   // number1 → 1
     if (Object.prototype.hasOwnProperty.call(NUM, s)) return NUM[s];
     return -1;
   }
@@ -292,7 +292,16 @@
      (เงียบเกิน 6 รอบรอถึง 2 วินาที) คำที่พูดในช่วงนั้นหายเงียบ = "บางทีต้องพูดหลายรอบ"
      ตอนนี้: ฟังต่อเนื่องรอบยาว (continuous=true) · บอก "พูดได้เลย" + ติ๊ง เฉพาะตอนไมค์เปิดจริง
      (onaudiostart) · ระหว่างรอเปิดใหม่ขึ้นว่า "รอสักครู่" · เปิดใหม่ทันทีไม่หน่วง */
-  var rec = null, recGen = 0, missCount = 0;
+  var rec = null, recGen = 0, missCount = 0, pendingLead = 0;
+  var BARE_LEAD = /^(?:number|numbers|option|choice|answer|letter|the answer is|answer is|its|it is|its number|the number|ข้อ|ข้อที่|ตอบ|ตอบข้อ|เลือก|เลือกข้อ|เบอร์|หมายเลข|ตัวเลือก|ตัวเลือกที่)$/;
+  function isBareLead(alts) {
+    for (var i = 0; i < alts.length; i++) if (BARE_LEAD.test(normSp(alts[i]))) return true;
+    return false;
+  }
+  function hasLeadNumber(t) {
+    var sp = normSp(t);
+    return /^(?:number|no|option|choice|letter|ข้อ|ข้อที่)\s*\S/.test(sp) && sp.split(' ').length <= 3 && parseNumber(t) >= 0;
+  }
   var fakeMic = false, fakeDeliver = null;   // ทดสอบในเบราว์เซอร์โดยไม่ใช้ไมค์จริง
   function stopListening() {
     recGen++;
@@ -303,10 +312,24 @@
   function listen(onHeard) {
     if (!state.on || (!SR && !fakeMic)) return;
     stopListening();
-    var g = recGen, handled = false, announced = false;
+    var g = recGen, handled = false, announced = false, earlyText = '';
     function deliver(alts) {
       if (g !== recGen || handled) return;
-      showHeard(alts[0]);
+      /* "number" เฉย ๆ = ยังพูดไม่จบ (ระบบฟังมักตัด "number … one" เป็นสองท่อนเมื่อเว้นจังหวะนิดเดียว)
+         เดิมถือว่าตอบไม่ได้ แล้วเล่นเสียง "ตึ้ด" ทับตอนผู้เล่นกำลังพูดเลข — เลขเลยหายทุกครั้ง
+         ตอนนี้จำไว้ แล้วเอาไปต่อหน้าคำถัดไปที่ได้ยินภายใน 6 วินาที */
+      if (isBareLead(alts) && !alts.some(function (a) { return parseNumber(a) >= 0; })) {
+        pendingLead = Date.now();
+        showHeard(alts[0] + ' …');
+        return;
+      }
+      var said = alts[0];
+      if (pendingLead && Date.now() - pendingLead < 6000) {
+        said = 'number ' + said;
+        alts = alts.map(function (a) { return 'number ' + a; }).concat(alts);
+      }
+      pendingLead = 0;
+      showHeard(said);
       if (isCmd(alts, 'stop')) { handled = true; setOn(false); return; }
       handled = !!onHeard(alts);
       if (handled && rec && g === recGen) { try { rec.abort(); } catch (e) {} }
@@ -332,9 +355,22 @@
       if (g !== recGen || handled) return;
       for (var k = e.resultIndex; k < e.results.length; k++) {
         var res = e.results[k];
-        if (!res.isFinal) { showHeard(res[0].transcript + ' …'); continue; }
+        if (!res.isFinal) {
+          var it = res[0].transcript;
+          showHeard(it + ' …');
+          /* ได้ยิน "number สอง" ครบแล้วระหว่างทาง ตอบเลยไม่ต้องรอระบบสรุปผล
+             (เฉพาะแบบมีคำนำหน้า เพราะคำเดี่ยวอย่าง "to" อาจเป็นต้นคำว่า "tool" ที่ยังพูดไม่จบ) */
+          if (hasLeadNumber(it) && norm(it) !== earlyText) {
+            earlyText = norm(it);
+            deliver([it]);
+            if (handled) return;
+          }
+          continue;
+        }
         var alts = [];
         for (var i = 0; i < res.length; i++) alts.push(res[i].transcript);
+        if (earlyText && norm(alts[0]) === earlyText) { earlyText = ''; continue; }   // ส่งไปแล้วตอนได้ยินระหว่างทาง
+        earlyText = '';
         deliver(alts);
         if (handled) return;
       }
@@ -427,7 +463,7 @@
   }
   function numberHint(ambiguous) {
     var head = ambiguous ? 'ยังไม่แน่ใจว่าข้อไหน' : 'ยังจับคำตอบไม่ได้';
-    return isEn() ? [head, 'ลองพูดว่า', 'number one', 'ถึง', 'number four']
+    return isEn() ? [head, 'ลองพูดแค่เลข เช่น', 'two', 'หรือ', 'number two', 'ให้ติดกันในคำเดียว']
                   : [head, 'ลองพูดเลขข้อ หนึ่ง ถึง สี่'];
   }
   function feedback(btn) {
