@@ -285,6 +285,7 @@
   }
   function beepReady() { tone([880, 1320], 70); }
   function beepMiss() { tone([330, 247], 110); }
+  function beepGood() { tone([660, 990], 80); }
 
   /* ── ระบบฟัง ──
      ของเดิม (ก่อน 11 พ.ย.) ฟังทีละประโยค (continuous=false) แล้วเปิดใหม่ทุกครั้งที่จบ
@@ -446,31 +447,59 @@
       if (m.pos >= 0) {
         var b = btns[m.pos];
         if (!b || b.disabled) return true;
+        startHold();          // ให้ข้อถัดไปรอจนเฉลยอ่านจบ (hook ใน nextQuestion ของเกม)
         b.click();
         setTimeout(function () { feedback(b); }, 80);
         return true;
       }
       /* จับคำตอบไม่ได้: ส่งเสียง "ตึ้ด" แล้วฟังต่อทันทีโดยไม่ปิดไมค์
-         พูดคำแนะนำยาว ๆ เฉพาะเมื่อพลาดติดกันหลายครั้ง หรือได้ยินก้ำกึ่งระหว่างสองข้อ */
+         ผู้ใช้บอกว่าคำแนะนำพูดบ่อยเกินไป (11 พ.ย.) — เสียงรอบข้างหรือเสียงเกมเองก็นับเป็นพลาดได้
+         จึงพูดแนะนำเฉพาะเมื่อพลาด 5 ครั้งในข้อเดียว ไม่เกินข้อละครั้ง และห่างกันอย่างน้อย 2 นาที */
       missCount++;
-      if (m.ambiguous || missCount % 3 === 0) {
-        say(numberHint(m.ambiguous), function () { if (lastKey === key) listen(heard); });
+      if (missCount >= 5 && hintedKey !== key && Date.now() - lastHintAt > 120000) {
+        hintedKey = key;
+        lastHintAt = Date.now();
+        say(numberHint(), function () { if (lastKey === key) listen(heard); });
         return true;
       }
       beepMiss();
       return false;
     };
   }
-  function numberHint(ambiguous) {
-    var head = ambiguous ? 'ยังไม่แน่ใจว่าข้อไหน' : 'ยังจับคำตอบไม่ได้';
-    return isEn() ? [head, 'ลองพูดแค่เลข เช่น', 'two', 'หรือ', 'number two', 'ให้ติดกันในคำเดียว']
-                  : [head, 'ลองพูดเลขข้อ หนึ่ง ถึง สี่'];
+  var hintedKey = '', lastHintAt = 0;
+  function numberHint() {
+    return isEn() ? ['ลองพูด', 'two', 'หรือ', 'number two'] : ['ลองพูดเลขข้อ เช่น สอง'];
   }
+
+  /* ── รอเฉลยให้จบก่อนไปข้อถัดไป ──
+     เกมขึ้นข้อใหม่เองหลังตอบ 0.75–1.6 วินาที แต่เสียงเฉลยยาวกว่านั้น ผู้เล่นเลยได้ยินเฉลยตอนข้อใหม่ขึ้นแล้ว
+     hook ใน nextQuestion ถาม holdNext() ก่อน ถ้ากำลังเฉลยอยู่ก็ฝากฟังก์ชันไว้ แล้วเรียกเมื่ออ่านจบ
+     มีเพดาน 7 วินาที เกมจะไม่มีวันค้างเพราะเสียง */
+  var hold = { on: false, fn: null, timer: 0 };
+  function startHold() {
+    clearTimeout(hold.timer);
+    hold.on = true; hold.fn = null;
+    hold.timer = setTimeout(releaseHold, 7000);
+  }
+  function releaseHold() {
+    clearTimeout(hold.timer);
+    var fn = hold.fn;
+    hold.on = false; hold.fn = null;
+    if (fn) fn();
+  }
+  function holdNext(fn) {
+    if (!state.on || !hold.on) return false;
+    hold.fn = fn;
+    return true;
+  }
+
+  /* ตอบถูก: เกมมีเสียงเอฟเฟกต์อยู่แล้ว เติมแค่เสียงสั้น ๆ ไม่ต้องพูด · ตอบผิด: บอกคำตอบที่ถูกสั้น ๆ */
   function feedback(btn) {
     missCount = 0;
-    if (btn.classList.contains('correct')) { say(['ถูกต้อง'], afterSpeech); return; }
+    if (btn.classList.contains('correct')) { beepGood(); releaseHold(); return; }
     var right = document.querySelector('#choices .choice.correct span');
-    say(['ยังไม่ใช่', right ? 'คำตอบคือ ' + txt(right) : ''], afterSpeech);
+    if (!right) { releaseHold(); return; }
+    say(['คำตอบคือ', txt(right)], function () { setTimeout(releaseHold, 250); });
   }
 
   function onResult(ctx) {
@@ -638,6 +667,7 @@
       // ต้องเริ่มพูดในจังหวะที่ผู้เล่นแตะ ไม่งั้น iPhone จะไม่ยอมให้เว็บพูด
       say(intro, function () { tick(); });
     } else {
+      releaseHold();
       stopListening();
       speakGen++;
       if (synth) synth.cancel();
@@ -743,6 +773,7 @@
   window.VQVoice = {
     active: function () { return state.on; },
     setOn: setOn,
+    holdNext: holdNext,
     _match: matchAnswer,
     _number: parseNumber,
     _context: readContext,

@@ -16716,6 +16716,7 @@ function renderItemBar() {
 
 function nextQuestion() {
   if (!B || B.over) return;
+  if (window.VQVoice && VQVoice.holdNext && VQVoice.holdNext(nextQuestion)) return;
   B.q++;
   v8Question();
   v11CombatQuestion();
@@ -19624,6 +19625,6 @@ v12PetSetup();
 })();
 
 </script>
-<script src="voice.e7bf48a8335d.js"></script>
+<script src="voice.45e366e0c6f4.js"></script>
 </body>
 </html>
