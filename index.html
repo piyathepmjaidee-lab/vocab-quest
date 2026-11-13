@@ -11124,6 +11124,18 @@ var SKILLS = [
     } }
 ];
 
+/* V14 สกิลเฉพาะคลาส 4 */
+SKILLS.push(
+  { id: "sunflare", br: "atk", lv: 50, max: 3, icon: "☀️", name: "เปลวสุริยะ", cls: "solaris", need: ["burn",1], desc: function (r) { return 'ดาเมจคริติคอลแรงขึ้น +' + (r * 15) + '% (จาก ×1.8 เป็น ×' + (1.8 + r * 0.15).toFixed(2) + ')'; } },
+  { id: "rebirth", br: "atk", lv: 50, max: 2, icon: "🐦‍🔥", name: "ฟีนิกซ์คืนชีพ", cls: "everflame", need: ["burn",1], desc: function (r) { return 'เลือดหมดครั้งแรกในสเตจ ฟื้นกลับ ' + (15 + r * 15) + '% แล้วจุดไฟลามทุ่งใส่ศัตรูทันที'; } },
+  { id: "overture", br: "atk", lv: 50, max: 2, icon: "🎻", name: "โหมโรง", cls: "maestro", need: ["encore",1], desc: function (r) { return 'เริ่มทุกสเตจด้วยเกจท่าไม้ตาย ' + (r * 25) + '% (รวมกับโห่ร้องได้ สูงสุด 80%)'; } },
+  { id: "hexcurse", br: "atk", lv: 50, max: 2, icon: "🪶", name: "คำสาปอ่อนแรง", cls: "hexbard", need: ["encore",1], desc: function (r) { return 'ตอบถูกแล้วสาปศัตรู ทำให้ศัตรูตีเบาลง ' + (2 + r * 2) + '% ต่อชั้น (สูงสุด 3 ชั้น · ล้างเมื่อตอบผิด)'; } },
+  { id: "endless", br: "def", lv: 50, max: 2, icon: "🏰", name: "กำแพงไม่สิ้นสุด", cls: "citadel", need: ["riposte",1], desc: function (r) { return 'ตอบถูกครบทุก ' + (5 - r) + ' ข้อ ได้โล่ 1 ชั้น (ไม่เกินเพดานโล่)'; } },
+  { id: "mirrorall", br: "def", lv: 50, max: 3, icon: "🪞", name: "สะท้อนทุกคม", cls: "mirrorguard", need: ["riposte",1], desc: function (r) { return 'โดนตีเมื่อไหร่ สะท้อนดาเมจกลับ ' + (r * 20) + '% ของที่ได้รับ'; } },
+  { id: "grace", br: "sch", lv: 50, max: 2, icon: "✨", name: "พรแห่งการให้อภัย", cls: "saint", need: ["redeem",1], desc: function (r) { return 'ใช้สิทธิ์ตอบผิดฟรีแล้ว ฟื้นเลือด ' + (r * 4) + '% และเกจท่าไม้ตายไม่ลด'; } },
+  { id: "guiding", br: "sch", lv: 50, max: 2, icon: "🗼", name: "แสงนำทาง", cls: "beacon", need: ["redeem",1], desc: function (r) { return 'ตอบผิดแล้ว ข้อถัดไปตัดตัวเลือกผิดออกให้ 1 ข้อ (' + r + ' ครั้งต่อสเตจ)'; } }
+);
+
 function skillById(id) {
   for (var i = 0; i < SKILLS.length; i++) if (SKILLS[i].id === id) return SKILLS[i];
   return null;
@@ -11160,7 +11172,7 @@ function skillState(s) {
 
 /* ── ค่ากลางที่สกิลใหม่ไปแตะ · รวมไว้ที่เดียวจะได้ไม่ลืมแก้ตามที่ใดที่หนึ่ง ── */
 function shieldCap() { return sk('k_fort') ? 5 : 3; }          // 🏯 ป้อมปราการ ซ้อนโล่ได้ลึกกว่า
-function critMul() { return sk('k_gambler') ? 2.3 : 1.8; }     // 🎲 นักพนัน หมัดคริหนักขึ้น
+function critMul() { return (sk('k_gambler') ? 2.3 : 1.8) + sk('sunflare') * 0.15; }     // 🎲 นักพนัน หมัดคริหนักขึ้น
 function petSkillMul() { return 1 + sk('petbond') * 0.25; }    // 🐾 ใจถึงใจ สัตว์เลี้ยงแรงขึ้น
 /* 🐉 สัตว์คู่ใจ: ออกโรงทุกข้อ แต่เกลี่ยความแรงต่อครั้งลง ให้รวมทั้งสเตจแล้วได้ PET_BEAST_RATE เท่าของปกติ
    เดิมตั้งจังหวะเป็น 1 ทั้งที่ความแรงต่อครั้งเท่าเดิม = แรงขึ้น 3-5 เท่า น้ำทิพย์ฟื้นเลือดเกินดาเมจที่โดนจนไม่มีวันตาย */
@@ -14633,7 +14645,8 @@ function expNeed(lv) { return Math.round(70 * Math.pow(lv, 1.35)); }
 
 // ดาเมจที่ผู้เล่นได้รับ หลังหักค่าป้องกันแล้ว (อย่างน้อย 1 เสมอ)
 function takeDamage(base) {
-  var cut = Math.min(0.75, defRate() + classBonus('dr'));   // เพดานรวมกันบั๊กอมตะ
+  var cut = Math.min(0.75, defRate() + classBonus('dr'));
+  if (B && B.curse && sk('hexcurse')) base *= 1 - B.curse * (0.02 + 0.02 * sk('hexcurse'));   // 🪶 คำสาปอ่อนแรง   // เพดานรวมกันบั๊กอมตะ
   return Math.max(1, Math.round(base * (1 - cut)));
 }
 
@@ -15870,6 +15883,14 @@ function renderChoices() {
     b.addEventListener('click', function () { answer(ci, b); });
     box.appendChild(b);
   });
+  // 🗼 แสงนำทาง: ตัดตัวเลือกผิด 1 ข้อ (แบบเดียวกับคัมภีร์ชี้ทาง)
+  if (B.guideNext) {
+    B.guideNext = false;
+    var gw = [];
+    for (var gp = 0; gp < B.order.length; gp++) if (B.order[gp] !== B.answerIdx) gw.push(gp);
+    var gb = gw.length ? box.children[gw[Math.floor(Math.random() * gw.length)]] : null;
+    if (gb) { gb.classList.add('faded'); gb.disabled = true; v8BattleLater(function () { if (B) floatText('🗼 แสงนำทาง', 'guard', 'hero'); }, 120); }
+  }
 }
 
 /* ท่าจารอักษร — แตะไทล์เรียงตัวอักษร ไม่ใช้คีย์บอร์ด
@@ -16615,6 +16636,7 @@ function startBattle(z, s, reviewPool, isMend, isHard) {
     freeMiss: sk('recall') + classBonus('freeMiss'),   // โควตาตอบผิดแบบไม่เสียเลือด (สกิล + คลาสสายอภัยโทษ)
     bulwarkLeft: sk('bulwark'),   // ปราการ: โควตาโล่ที่จะได้จากการตอบผิด
     usedSecondWind: false,
+    usedRebirth: false, curse: 0, endlessN: 0, guideLeft: sk('guiding'), guideNext: false,   // V14 สกิลคลาส 4
     // ── สกิลลายเซ็นของคลาสที่ 3 ──
     burn: null,                   // { ticks, dmg } ไฟที่ติดตัวมอนสเตอร์อยู่
     encoreUsed: false,            // ท่อนซ้ำใช้ได้ครั้งเดียวต่อสเตจ กันวนซ้ำไม่จบ
@@ -16623,7 +16645,7 @@ function startBattle(z, s, reviewPool, isMend, isHard) {
     redeemWord: -1, isRedeem: false,
     q: 0, combo: 0, maxCombo: 0, correct: 0, wrong: 0,
     // 📣 โห่ร้อง: เริ่มสเตจโดยเกจไม่ได้ว่างเปล่า
-    ult: Math.min(80, sk('rally') * 20), missed: [], recent: lastWords.slice(), locked: true,
+    ult: Math.min(80, sk('rally') * 20 + sk('overture') * 25), missed: [], recent: lastWords.slice(), locked: true,
     hintOn: false,
     word: -1, order: [], deadline: 0, duration: 0,
     // ── ท่วงท่าปะทะ ──
@@ -16870,6 +16892,8 @@ function resolveAnswer(ok, timeout) {
 
 function onCorrect() {
   B.correct++;
+  if (sk('hexcurse') && B.curse < 3) { B.curse++; var vqCs = B.curse; v8BattleLater(function () { if (B) floatText('🪶 คำสาป ×' + vqCs, 'guard', 'enemy'); }, 520); }
+  if (sk('endless') && ++B.endlessN >= 5 - sk('endless')) { B.endlessN = 0; if (B.shield < shieldCap()) { B.shield++; renderShield(); v8BattleLater(function () { if (B) floatText('🏰 +โล่', 'guard', 'hero'); }, 300); } }
   B.combo++;
   if (B.combo > B.maxCombo) B.maxCombo = B.combo;
   if (B.combo > save.tot.bestCombo) save.tot.bestCombo = B.combo;
@@ -17262,6 +17286,8 @@ function finishUltimateResolution() {
 
 function onWrong(timeout) {
   v8Wrong();
+  B.curse = 0;
+  if (sk('guiding') && B.guideLeft > 0 && !B.guideNext) { B.guideLeft--; B.guideNext = true; }
   v11CombatWrong();
   B.wrong++;
   // 🪢 ใจนิ่ง: พลาดหนึ่งข้อไม่ล้มทั้งแถว คอมโบเหลือครึ่งแทนที่จะเป็นศูนย์
@@ -17327,6 +17353,12 @@ function monsterStrike(kind) {
   // ทวนอีกครั้ง: ตอบผิดช่วงแรกของสเตจไม่เสียพลังชีวิต
   if (kind === 'full' && B.freeMiss > 0) {
     B.freeMiss--;
+    if (sk('grace')) {
+      var gh = Math.min(maxHp() - save.hp, Math.round(maxHp() * 0.04 * sk('grace')));
+      if (gh > 0) save.hp += gh;
+      B.ult = Math.min(100, B.ult + 10); $('ult-fill').style.width = B.ult + '%';
+      v8BattleLater(function () { if (!B) return; if (gh > 0) floatText('✨ +' + gh, 'heal', 'hero'); renderHeroHp(); }, 320);
+    }
     if (B.charging) setCharging(false);
     v8BattleLater(function () { floatText('✍️ ทวนไว้ทัน', 'guard', 'hero'); }, 150);
     SFX.ui();
@@ -17400,6 +17432,12 @@ function monsterStrike(kind) {
       SFX.ready();
     }, 380);
   }
+  if (save.hp <= 0 && sk('rebirth') && !B.usedRebirth) {
+    B.usedRebirth = true;
+    save.hp = Math.round(maxHp() * (0.15 + 0.15 * sk('rebirth')));
+    if (sk('burn')) igniteBurn(Math.round(atk() * 2), 560);
+    v8BattleLater(function () { if (!B) return; floatText('🐦‍🔥 ฟีนิกซ์คืนชีพ!', 'heal', 'hero'); renderHeroHp(); SFX.ready(); }, 420);
+  }
   if (charged) setCharging(false);
 
   fxEnemyCast(charged);
@@ -17420,6 +17458,17 @@ function monsterStrike(kind) {
     return;
   }
 
+  if (sk('mirrorall') && !B.over) {
+    var mir = Math.max(1, Math.round(dmg * 0.2 * sk('mirrorall')));
+    B.monster.hp -= mir;
+    v8BattleLater(function () { if (!B) return; floatText('🪞 ' + mir, 'crit', 'enemy'); setBar($('enemy-hp'), Math.max(0, B.monster.hp) / B.monster.maxHp); }, 380);
+    if (B.monster.hp <= 0) {
+      B.over = true;
+      v8BattleLater(function () { if (B) $('enemy-sprite').classList.add('dead'); }, 700);
+      v8BattleLater(victory, 1300);
+      return;
+    }
+  }
   // 🌵 หนามสะท้อน: เลือดที่เสียไปกลายเป็นหนามทิ่มกลับ (คิดหลังลมหายใจสอง เพราะคนที่รอดยังสวนได้)
   if (sk('k_thorn') && !B.over) {
     var thorn = Math.max(1, Math.round(dmg * 0.30));
