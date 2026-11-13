@@ -3,6 +3,7 @@
 <head>
 <base target="_top">
 <meta charset="utf-8">
+<script>window.VQ_CLASS4={"solaris":{"parent":"pyre","color":"#ffb300"},"everflame":{"parent":"pyre","color":"#ff6d00"},"maestro":{"parent":"cadence","color":"#9b6dff"},"hexbard":{"parent":"cadence","color":"#d14fd8"},"citadel":{"parent":"aegis","color":"#3aa0ff"},"mirrorguard":{"parent":"aegis","color":"#7fe0ff"},"beacon":{"parent":"mercy","color":"#8ff0c8"}};</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#eaf7ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5303,7 +5304,7 @@ window.ART = (function () {
      ตัวเต็มใช้ในสนามรบ (65px) การ์ดคลาส (76px) และหน้าเลือกคลาส (108px) */
   function hero(id, opt) {
     var D = !(opt && opt.simple);
-    var c = HERO[id] || HERO.novice;
+    var c = HERO[id] || HERO[(window.VQ_CLASS4 && VQ_CLASS4[id] && VQ_CLASS4[id].parent)] || HERO.novice;
     var o = ['<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">'];
     var robeD = shade(c.robe, -0.3), robeL = shade(c.robe, 0.12);
     var hatD = shade(c.hat, -0.32);
@@ -6025,7 +6026,7 @@ window.THREEART = (function () {
       };
       return o;
     }
-    var c = HERO[id] || HERO.novice;
+    var c = HERO[id] || HERO[(window.VQ_CLASS4 && VQ_CLASS4[id] && VQ_CLASS4[id].parent)] || HERO.novice;
     if (!c) return null;
     var root = new T.Group();
     var P = {};                         // ชิ้นส่วนที่ท่าทางต้องขยับ
@@ -7184,8 +7185,8 @@ window.THREEART = (function () {
 
   /* ท่าไม้ตายของคลาส id ที่ตำแหน่ง at · สีมาจากตาราง fx.color เดิมของเกม */
   function ult(id, at, color) {
-    var fn = ULT[id] || ultBeam;
-    return fn(color || ULT_COLOR[id] || '#a78bfa', at);
+    var fn = ULT[id] || ULT[(window.VQ_CLASS4 && VQ_CLASS4[id] && VQ_CLASS4[id].parent)] || ultBeam;
+    return fn(color || ULT_COLOR[id] || (window.VQ_CLASS4 && VQ_CLASS4[id] && VQ_CLASS4[id].color) || '#a78bfa', at);
   }
 
   /* ═══════════ เอฟเฟกต์การโจมตีของมอนสเตอร์ ═══════════
@@ -7738,7 +7739,7 @@ window.THREEART = (function () {
             list: cellList, isle: cellIsle, y: cellY, isleY: ISLE_Y,
             isleKeys: ISLE_KEYS, isles: ISLES },
     decorKinds: Object.keys(DECOR),
-    ult: ult, ultColor: function (id) { return ULT_COLOR[id] || '#a78bfa'; },
+    ult: ult, ultColor: function (id) { return ULT_COLOR[id] || (window.VQ_CLASS4 && VQ_CLASS4[id] && VQ_CLASS4[id].color) || '#a78bfa'; },
     mobFx: mobFx,
     fx: { cast: fxCast, bolt: fxBolt, impact: fxImpact, ult: fxUlt },
     clips: Object.keys(CLIPS),
@@ -9619,6 +9620,7 @@ window.V12Heroes = (function () {
   return {has:has,art:art,model:model,dom:dom};
 })();
 
+Object.assign(window.V12_HERO_DATA,{"solaris":{"name":"จักรพรรดิอัคคี","atlas":"img/5a2a2c9ede43058d.webp","frames":["img/21474c65a1e156f3.webp","img/25b4e640ba472040.webp","img/35c7c87caa450acb.webp","img/d4572fdac011d4d6.webp","img/4f6609ea1059c9c9.webp","img/a92e1c3a6604e122.webp","img/d3600f36608ceade.webp","img/7598b610b87228bb.webp"],"artHeight":1.8726659751037344},"everflame":{"name":"เพลิงนิรันดร์","atlas":"img/381ee3c7cb98a5de.webp","frames":["img/3aa07c399d7b063a.webp","img/21d2e3a6a297a094.webp","img/5d341d075e027260.webp","img/8ac4226fe87e0368.webp","img/e03fe28bf5a69213.webp","img/7843791f8933484e.webp","img/2c425a2aa4b862bc.webp","img/8cd4a506f96ae857.webp"],"artHeight":1.7735248447204965},"maestro":{"name":"วาทยกรสวรรค์","atlas":"img/ebbd6adbb17c0233.webp","frames":["img/77ad48ad108eba15.webp","img/0e123f036e632ebc.webp","img/562ec969fcf58a87.webp","img/9823936292126661.webp","img/72e3ae690e0c7ec7.webp","img/af40f60974b57062.webp","img/01c4e7f9ed913ee6.webp","img/22f9bb5143f21bb2.webp"],"artHeight":1.9054915048543688},"hexbard":{"name":"กวีคำสาป","atlas":"img/c09680866325d7c7.webp","frames":["img/a6191047f97b43f7.webp","img/96ddd0c985d8afec.webp","img/e7d73ce256b0e29e.webp","img/29235dd41f53166c.webp","img/71b2f79c87706e90.webp","img/bcdf935ba6a1bb98.webp","img/3561cfc9b3872c59.webp","img/a66de62b3e3b0f2b.webp"],"artHeight":1.9784246575342463},"citadel":{"name":"ป้อมนิรันดร์","atlas":"img/ce5ba2871e048e47.webp","frames":["img/a34661d5a4d38073.webp","img/ffd504e5825637de.webp","img/f2b37676755e5b82.webp","img/84b0e1fedc645057.webp","img/f079b72d20c98f8e.webp","img/81250aab5aeff127.webp","img/36fff9305e813408.webp","img/db9046cec16191df.webp"],"artHeight":1.577845982142857},"mirrorguard":{"name":"อัศวินโล่สะท้อน","atlas":"img/ff1d9ee773ccea89.webp","frames":["img/2832f86df9899430.webp","img/ce9772032a59dd58.webp","img/ddf1fad510e8ea36.webp","img/5fca963aab118772.webp","img/a636f05f5662c7bf.webp","img/a3679b9337fe4507.webp","img/aa567b0e7efb85ad.webp","img/b63e7a8cabb04bbd.webp"],"artHeight":1.5820676274944567},"beacon":{"name":"ผู้นำทางแสง","atlas":"img/55770037a7f7f8f0.webp","frames":["img/3d5d279e48fa922b.webp","img/bf0f294f889b51cf.webp","img/1e31667cf69a7792.webp","img/fbd5c9c552439fc3.webp","img/71f6072f6c3ff4d8.webp","img/e2f3ff389372f9fc.webp","img/b2966dba1b85fad2.webp","img/531411a2ff77d00b.webp"],"artHeight":1.8369988864142537}});
 /* V12_HEROES_END */
 window.BATTLE3D = (function () {
   'use strict';
@@ -10902,6 +10904,19 @@ var CLASSES = {
     fx: { color: '#7dd3c0', crit: '#e6fff8', bolt: 'orb', impact: 'burst', ult: 'bulwark' }
   }
 };
+
+/* V14 คลาสที่ 4 (สร้างโดย tools/build-static.cjs) */
+CLASSES["solaris"] = {"id":"solaris","tier":4,"from":"pyre","minLv":50,"name":"จักรพรรดิอัคคี","title":"คลาสที่ 4 · สายสุริยันพิฆาต","desc":"จบทุกอย่างในหมัดเดียว คริติคอลถี่จนมอนสเตอร์แทบไม่ได้ขยับ แต่ไม่มีอะไรช่วยถ้าพลาดบ่อย","perk":"ดาเมจ +28% · คริติคอล +14% · เกจท่าไม้ตาย +5 ต่อการตอบถูก","bonus":{"dmg":0.28,"crit":0.14,"gauge":5},"ult":{"name":"สุริยันพิพากษา","icon":"☀️","mult":6.8,"hits":5,"desc":"เรียกดวงอาทิตย์จิ๋วถล่มรวดเดียว 5 ครั้ง ดาเมจ 6.8 เท่า"},"fx":{"color":"#ffb300","crit":"#fff1a8","bolt":"flame","impact":"nova","ult":"meteor"}};
+CLASSES["everflame"] = {"id":"everflame","tier":4,"from":"pyre","minLv":50,"name":"เพลิงนิรันดร์","title":"คลาสที่ 4 · สายไฟไม่มอด","desc":"ไฟที่ไม่มีวันดับ แรงน้อยกว่าสายสุริยันนิดหน่อย แต่ลุกขึ้นมาสู้ต่อได้ทุกสเตจ เหมาะกับการดันด่านยาว","perk":"ดาเมจ +22% · เกจท่าไม้ตาย +5 ต่อการตอบถูก · ชนะสเตจแล้วฟื้น HP 30%","bonus":{"dmg":0.22,"gauge":5,"healWin":0.3},"ult":{"name":"เปลวนิรันดร์","icon":"🔥","mult":5.8,"hits":5,"heal":0.15,"desc":"ไฟฟีนิกซ์ถล่ม 5 ครั้ง ดาเมจ 5.8 เท่า พร้อมฟื้นพลังชีวิต 15%"},"fx":{"color":"#ff6d00","crit":"#ffd166","bolt":"flame","impact":"nova","ult":"meteor"}};
+CLASSES["maestro"] = {"id":"maestro","tier":4,"from":"cadence","minLv":50,"name":"วาทยกรสวรรค์","title":"คลาสที่ 4 · สายซิมโฟนี","desc":"คุมจังหวะทั้งสนาม เกจเต็มไวที่สุดในเกม ปล่อยท่าไม้ตายถี่จนแทบทุกข้อเป็นท่าไม้ตาย","perk":"เกจท่าไม้ตาย +18 ต่อการตอบถูก · ดาเมจ +12% · ชนะสเตจแล้วฟื้น HP 25%","bonus":{"dmg":0.12,"gauge":18,"healWin":0.25},"ult":{"name":"ซิมโฟนีสวรรค์","icon":"🎻","mult":5,"hits":7,"desc":"บรรเลงเจ็ดจังหวะติดกัน ดาเมจ 5.0 เท่า · เกจเต็มไวที่สุดในเกม"},"fx":{"color":"#9b6dff","crit":"#e6d1ff","bolt":"orb","impact":"burst","ult":"beam"}};
+CLASSES["hexbard"] = {"id":"hexbard","tier":4,"from":"cadence","minLv":50,"name":"กวีคำสาป","title":"คลาสที่ 4 · สายบทกวีต้องสาป","desc":"ร่ายบทกวีที่ทั้งเร็วและคม คริติคอลสูงกว่าสายขานเวททั่วไป แลกกับไม่มีการฟื้นพลังชีวิต","perk":"เกจท่าไม้ตาย +13 ต่อการตอบถูก · ดาเมจ +16% · คริติคอล +10%","bonus":{"dmg":0.16,"crit":0.1,"gauge":13},"ult":{"name":"บทกวีต้องสาป","icon":"🪶","mult":5.2,"hits":6,"desc":"ร่ายคำสาปหกบรรทัด ดาเมจ 5.2 เท่า"},"fx":{"color":"#d14fd8","crit":"#ffd1fb","bolt":"orb","impact":"burst","ult":"beam"}};
+CLASSES["citadel"] = {"id":"citadel","tier":4,"from":"aegis","minLv":50,"name":"ป้อมนิรันดร์","title":"คลาสที่ 4 · สายป้อมปราการ","desc":"ทนที่สุดในเกม แทบไม่มีอะไรล้มได้ ดันด่านยาวได้ในคราวเดียว แต่ชนะช้าที่สุด","perk":"ลดดาเมจที่ได้รับ 30% · ชนะสเตจแล้วฟื้นพลังชีวิตเป็น 55%","bonus":{"dr":0.3,"healWin":0.55},"ult":{"name":"ป้อมปราการนิรันดร์","icon":"🏰","mult":3.8,"hits":3,"heal":0.32,"shield":4,"desc":"ทลายศัตรู 3.8 เท่า พร้อมฟื้นพลังชีวิต 32% และได้โล่ 4 ชั้น"},"fx":{"color":"#3aa0ff","crit":"#d6f2ff","bolt":"shard","impact":"frost","ult":"bulwark"}};
+CLASSES["mirrorguard"] = {"id":"mirrorguard","tier":4,"from":"aegis","minLv":50,"name":"อัศวินโล่สะท้อน","title":"คลาสที่ 4 · สายสะท้อนคม","desc":"รับแล้วสวนกลับ ทนน้อยกว่าสายป้อมนิดหน่อย แต่ตีแรงกว่าและจบการต่อสู้ได้ไวกว่า","perk":"ลดดาเมจที่ได้รับ 24% · ดาเมจ +12% · ชนะสเตจแล้วฟื้นพลังชีวิตเป็น 45%","bonus":{"dr":0.24,"dmg":0.12,"healWin":0.45},"ult":{"name":"โล่สะท้อนพันคม","icon":"🪞","mult":4.2,"hits":4,"heal":0.2,"shield":2,"desc":"สะท้อนพลังกลับ 4 ครั้ง ดาเมจ 4.2 เท่า พร้อมฟื้นพลังชีวิต 20% และได้โล่ 2 ชั้น"},"fx":{"color":"#7fe0ff","crit":"#e9fbff","bolt":"shard","impact":"frost","ult":"bulwark"}};
+CLASSES["beacon"] = {"id":"beacon","tier":4,"from":"mercy","minLv":50,"name":"ผู้นำทางแสง","title":"คลาสที่ 4 · สายประภาคาร","desc":"ให้อภัยและปล่อยท่าไม้ตายได้บ่อยขึ้น ท่าไม้ตายรักษาได้มากที่สุดในเกม","perk":"ตอบผิดฟรี 2 ครั้งต่อสเตจ · เกจท่าไม้ตาย +8 ต่อการตอบถูก · ลดดาเมจ 12% · ชนะสเตจแล้วฟื้น HP 50%","bonus":{"dr":0.12,"healWin":0.5,"freeMiss":2,"gauge":8},"ult":{"name":"ประภาคารแห่งแสง","icon":"🗼","mult":3.4,"hits":3,"heal":0.45,"shield":2,"desc":"ส่องแสงนำทาง ดาเมจ 3.4 เท่า พร้อมฟื้นพลังชีวิต 45% และได้โล่ 2 ชั้น"},"fx":{"color":"#8ff0c8","crit":"#e6fff8","bolt":"orb","impact":"burst","ult":"bulwark"}};
+if (CLASSES["pyre"]) CLASSES["pyre"].next = {"atLv":50,"name":"คลาสที่ 4","to":["solaris","everflame"]};
+if (CLASSES["cadence"]) CLASSES["cadence"].next = {"atLv":50,"name":"คลาสที่ 4","to":["maestro","hexbard"]};
+if (CLASSES["aegis"]) CLASSES["aegis"].next = {"atLv":50,"name":"คลาสที่ 4","to":["citadel","mirrorguard"]};
+if (CLASSES["mercy"]) CLASSES["mercy"].next = {"atLv":50,"name":"คลาสที่ 4","to":["beacon"]};
 
 function currentClass() { return CLASSES[save.cls] || CLASSES.novice; }
 
