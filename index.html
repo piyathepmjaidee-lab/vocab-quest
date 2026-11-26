@@ -3,7 +3,7 @@
 <head>
 <base target="_top">
 <meta charset="utf-8">
-<script>window.VQ2_ITEM_ART={};</script>
+<script>window.VQ2_ITEM_ART={"10":1,"11":1,"12":1,"13":1,"14":1,"15":1,"16":1,"17":1,"18":1,"19":1};</script>
 <script>window.VQ_CLASS4={"solaris":{"parent":"pyre","color":"#ffb300","color2":"#fff1a8"},"everflame":{"parent":"pyre","color":"#ff6d00","color2":"#ffd166"},"maestro":{"parent":"cadence","color":"#9b6dff","color2":"#e6d1ff"},"hexbard":{"parent":"cadence","color":"#d14fd8","color2":"#ffd1fb"},"citadel":{"parent":"aegis","color":"#3aa0ff","color2":"#d6f2ff"},"mirrorguard":{"parent":"aegis","color":"#7fe0ff","color2":"#e9fbff"},"saint":{"parent":"mercy","color":"#ffe08a","color2":"#fffbe6"},"beacon":{"parent":"mercy","color":"#8ff0c8","color2":"#e6fff8"}};</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#eaf7ff">
@@ -4671,6 +4671,16 @@ svg[data-farside], .atlas-postcard svg.atlas-painted[data-farside] { filter: sat
   .v15-sky .v15-node { width: 58px; } .v15-sky .v15-orb { width: 38px; height: 38px; font-size: 17px; }
   .v15-sky .v15-cap { display: none; }
 }
+.v11-art.v11-chapter-10{background-image:url("img/6b2efec95efc1f9d.webp")}
+.v11-art.v11-chapter-11{background-image:url("img/7ed118ac4344ccc8.webp")}
+.v11-art.v11-chapter-12{background-image:url("img/03f44cdfd3bd4272.webp")}
+.v11-art.v11-chapter-13{background-image:url("img/bf0a5bf44d3254a5.webp")}
+.v11-art.v11-chapter-14{background-image:url("img/06dfca4cfd6f0136.webp")}
+.v11-art.v11-chapter-15{background-image:url("img/c95503ace1dab06c.webp")}
+.v11-art.v11-chapter-16{background-image:url("img/154787be5ae2ef3a.webp")}
+.v11-art.v11-chapter-17{background-image:url("img/fc25db96b9f283c9.webp")}
+.v11-art.v11-chapter-18{background-image:url("img/bd7c6d149c881b9e.webp")}
+.v11-art.v11-chapter-19{background-image:url("img/d5ae870265e1d26e.webp")}
 </style>
 </head>
 <body>
@@ -13087,7 +13097,7 @@ function v11Render() {
   var chapterCount = g.owned.filter(function (id) { return Number.isInteger(V11Gear.catalog[id].chapter); }).length;
   var tabMine = $('v11-tab-mine'), tabBook = $('v11-tab-book'), tools = $('v11-book-tools');
   if (tabMine) { tabMine.className = 'v11-tab' + (collection ? '' : ' is-active'); if (tabMine.setAttribute) tabMine.setAttribute('aria-selected', String(!collection)); }
-  if (tabBook) { tabBook.className = 'v11-tab' + (collection ? ' is-active' : ''); if (tabBook.setAttribute) tabBook.setAttribute('aria-selected', String(collection)); tabBook.textContent = '📖 สมุดสะสม ' + chapterCount + '/90'; }
+  if (tabBook) { tabBook.className = 'v11-tab' + (collection ? ' is-active' : ''); if (tabBook.setAttribute) tabBook.setAttribute('aria-selected', String(collection)); tabBook.textContent = '📖 สมุดสะสม ' + chapterCount + '/' + (V11Gear.chapters.length * 9); }
   if (tools) tools.hidden = !collection;
   var ids = (collection ? Object.keys(V11Gear.catalog).filter(function (id) { return Number.isInteger(V11Gear.catalog[id].chapter) || g.owned.indexOf(id) >= 0; }) : g.owned.slice()).filter(function (id) {
     var item = V11Gear.catalog[id];
