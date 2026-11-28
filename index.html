@@ -9,6 +9,12 @@
 <meta name="theme-color" content="#eaf7ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ศึกคำศัพท์">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="app-icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Vocab Quest V12 · พลังคลาสสาม</title>
 
 <script>
@@ -4692,16 +4698,16 @@ svg[data-farside], .atlas-postcard svg.atlas-painted[data-farside] { filter: sat
   --q-gold-hi: #e9c779;
   --q-paper: rgba(255, 251, 243, .86);
   --q-line: rgba(122, 104, 160, .28);
-  position: relative;
+  /* ห้ามตั้ง position/min-height ทับ: ฐานเป็น absolute inset:0 + overflow-y:auto (หน้านี้เลื่อนในตัวเอง)
+     เคยตั้ง relative แล้วหน้ายืดตามเนื้อหา ถูกตัดล่าง เลื่อนบนมือถือไม่ได้ (28 พ.ย.) */
   isolation: isolate;
   background: #efe8f4 !important;
   overflow-x: hidden;
-  min-height: 100vh;
-  min-height: 100dvh;
 }
 /* ::before/::after ของหน้าแรกเป็นก้อนเมฆของธีมเดิม — ปิด แล้ววาดฉากด้วย .vq17-bg แทน */
 #screen-title.vq17::before, #screen-title.vq17::after { display: none !important; }
-.vq17 .vq17-bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+/* fixed = ฉากค้างเต็มจอขณะเนื้อหาเลื่อน (หน้านี้ซ่อนด้วย display:none ตอนไม่ใช้ ฉากจึงไม่โผล่หน้าอื่น) */
+.vq17 .vq17-bg { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
 .vq17 .vq17-bg i { position: absolute; inset: 0; }
 .vq17 .vq17-bg .art {                         /* ภาพฉากเต็มจอ */
   background: var(--vq17-art) center 35% / cover no-repeat;
@@ -4822,6 +4828,20 @@ svg[data-farside], .atlas-postcard svg.atlas-painted[data-farside] { filter: sat
   border: 1px solid var(--q-line) !important;
   border-radius: 14px !important;
 }
+.vq17 .vq17-fs-btn {
+  width: 100%; margin-top: 10px; padding: 10px !important; font-size: 14px !important;
+  background: transparent !important; color: var(--q-ink-soft) !important;
+  border: 1px dashed var(--q-line) !important; border-radius: 14px !important;
+}
+.vq17 .vq17-fs-tip {
+  width: 100%; margin-top: 10px; padding: 12px 14px; border-radius: 14px;
+  background: #fff; border: 1px solid var(--q-line); color: var(--q-ink);
+  font-size: 13.5px; line-height: 1.5; text-align: left;
+}
+.vq17 .vq17-fs-tip ol { margin: 6px 0 6px 18px; padding: 0; }
+.vq17 .vq17-fs-tip small { color: var(--q-ink-soft); }
+.vq17 .vq17-share { white-space: nowrap; font-weight: 700; color: #2b6fd6; }
+.vq17 .vq17-share i { font-style: normal; display: inline-block; border: 1px solid currentColor; border-radius: 4px; padding: 0 3px; font-size: 11px; }
 .vq17 .title-hof {
   background: rgba(255, 251, 243, .78) !important;
   border: 1px solid var(--q-line) !important;
@@ -4836,7 +4856,11 @@ svg[data-farside], .atlas-postcard svg.atlas-painted[data-farside] { filter: sat
 /* ── มือถือ: ภาพอยู่บน ข้อความกับการ์ดอยู่ล่าง ── */
 /* ตรงข้ามกับเงื่อนไขสองคอลัมน์ของหน้าแรก: (min-width:960px), (min-width:640px) and (orientation:landscape) */
 @media (max-width: 959px) and (orientation: portrait), (max-width: 639px) {
-  .vq17 .vq17-bg .art { bottom: auto; height: 520px; background-position: 30% 0; animation: none; }
+  .vq17 .vq17-bg .art {
+    bottom: auto; height: 560px; background-position: 30% 0; animation: none;
+    -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent);
+    mask-image: linear-gradient(180deg, #000 70%, transparent);
+  }
   .vq17 .vq17-bg .veil {
     background: linear-gradient(180deg, rgba(250, 246, 252, .15) 0%, rgba(250, 246, 252, .82) 30%, rgba(250, 246, 252, .95) 55%);
   }
@@ -22649,7 +22673,119 @@ function vq17LoginSetup() {
   if (story) story.classList.add('vq17-story');
 }
 
+/* ═══════════ V17 · โหมดเต็มจอ (ซ่อนแถบเบราว์เซอร์บน-ล่าง) ═══════════
+   เรียกท้าย closure ต่อจาก vq17LoginSetup()
+   - Android / แท็บเล็ต / คอม: Fullscreen API — เบราว์เซอร์ยอมเข้าเต็มจอเฉพาะตอนที่ผู้ใช้แตะเท่านั้น
+     จึงเข้าเต็มจอ "ตอนแตะปุ่มใดก็ได้" ถ้าเปิดตัวเลือกนี้ไว้ (ปัดออกจากเต็มจอแล้ว แตะปุ่มถัดไปก็กลับเข้าเอง)
+   - iPhone: Safari ไม่มี Fullscreen API สำหรับหน้าเว็บ ทางเดียวคือ "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดจากไอคอน
+     (manifest + apple-mobile-web-app-capable ที่ build-static ใส่ให้) ปุ่มจึงเปลี่ยนเป็นวิธีทำแทน
+   - ค่าเปิด/ปิดเก็บใน localStorage ของเครื่อง ไม่อยู่ในเซฟ — เป็นเรื่องของเครื่อง ไม่ต้องซิงก์ข้ามเครื่อง
+     ค่าเริ่มต้น: เปิดบนจอสัมผัส ปิดบนคอม (ครูเปิดโปรเจกเตอร์ไม่ควรโดนดึงเข้าเต็มจอเอง) */
+var VQ17_FS_KEY = 'vocabquest.fullscreen';
+
+function vq17FsEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+function vq17FsCan() {
+  var el = document.documentElement;
+  return !!((document.fullscreenEnabled || document.webkitFullscreenEnabled) && (el.requestFullscreen || el.webkitRequestFullscreen));
+}
+function vq17Standalone() {
+  return !!((window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches)) ||
+    window.navigator.standalone);
+}
+function vq17IsIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function vq17Touch() { return !!(window.matchMedia && matchMedia('(pointer: coarse)').matches); }
+function vq17FsWanted() {
+  var v = null;
+  try { v = localStorage.getItem(VQ17_FS_KEY); } catch (e) {}
+  return v ? v === 'on' : vq17Touch();
+}
+function vq17FsSetWanted(on) { try { localStorage.setItem(VQ17_FS_KEY, on ? 'on' : 'off'); } catch (e) {} }
+function vq17FsEnter() {
+  if (vq17FsEl() || !vq17FsCan()) return;
+  var el = document.documentElement, fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  try {
+    var p = fn.call(el, { navigationUI: 'hide' });
+    if (p && p.catch) p.catch(function () {});
+  } catch (e) {}
+}
+function vq17FsExit() {
+  if (!vq17FsEl()) return;
+  var fn = document.exitFullscreen || document.webkitExitFullscreen;
+  try { var p = fn.call(document); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+}
+
+function vq17FullscreenSetup() {
+  if (vq17Standalone()) return;                 // เปิดจากไอคอนหน้าจอโฮมอยู่แล้ว ไม่มีแถบให้ซ่อน
+  var can = vq17FsCan(), ios = vq17IsIOS();
+  if (!can && !ios) return;                     // เบราว์เซอร์นี้ทำไม่ได้ทั้งสองทาง ไม่ต้องโชว์อะไร
+
+  /* ปุ่มบนการ์ดเข้าเกม */
+  var panel = document.getElementById('login-panel');
+  if (panel && !document.getElementById('vq17-fs-btn')) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'vq17-fs-btn';
+    btn.className = 'btn vq17-fs-btn';
+    var tip = document.createElement('div');
+    tip.className = 'vq17-fs-tip';
+    tip.hidden = true;
+    tip.innerHTML = '<b>เล่นเต็มจอบน iPhone / iPad</b>' +
+      '<ol><li>แตะปุ่ม <span class="vq17-share">แชร์ <i>⬆</i></span> ของ Safari</li>' +
+      '<li>เลือก <b>เพิ่มไปยังหน้าจอโฮม</b></li>' +
+      '<li>เปิดเกมจากไอคอน <b>ศึกคำศัพท์</b> บนหน้าจอโฮม</li></ol>' +
+      '<small>เปิดจากไอคอนครั้งแรกให้ใส่รหัสเดิม เซฟบนคลาวด์จะโหลดกลับมาให้</small>';
+    var paint = function () {
+      if (!can) { btn.textContent = '⛶ วิธีเล่นแบบเต็มจอ'; return; }
+      btn.textContent = vq17FsEl() ? '⛶ ออกจากเต็มจอ' : '⛶ เล่นแบบเต็มจอ';
+    };
+    btn.addEventListener('click', function () {
+      if (!can) { tip.hidden = !tip.hidden; return; }
+      if (vq17FsEl()) { vq17FsSetWanted(false); vq17FsExit(); }
+      else { vq17FsSetWanted(true); vq17FsEnter(); }
+      vq17FsPaintSetting();
+    });
+    panel.appendChild(btn);
+    panel.appendChild(tip);
+    document.addEventListener('fullscreenchange', paint);
+    document.addEventListener('webkitfullscreenchange', paint);
+    paint();
+  }
+
+  if (!can) return;                             // ที่เหลือใช้ได้เฉพาะเบราว์เซอร์ที่มี Fullscreen API
+
+  /* ตัวเลือกในแท็บ สถิติ & ตั้งค่า */
+  var list = document.querySelector('#tab-more .settings-list');
+  if (list && !document.getElementById('set-fullscreen')) {
+    var row = document.createElement('label');
+    row.className = 'setting-row';
+    row.innerHTML = '<span>เล่นแบบเต็มจอ<small>ซ่อนแถบเบราว์เซอร์บน-ล่าง · แตะปุ่มในเกมแล้วเข้าเต็มจอเอง</small></span>' +
+      '<input type="checkbox" id="set-fullscreen">';
+    list.insertBefore(row, list.firstChild);
+    row.querySelector('input').addEventListener('change', function (e) {
+      vq17FsSetWanted(e.target.checked);
+      if (e.target.checked) vq17FsEnter(); else vq17FsExit();
+    });
+  }
+  vq17FsPaintSetting();
+
+  /* แตะปุ่มใดก็ได้ = กลับเข้าเต็มจอ (ต้องเป็นตอนแตะ เบราว์เซอร์ไม่ยอมให้เข้าเองลอย ๆ)
+     ไม่นับช่องพิมพ์ เพราะคีย์บอร์ดมือถือเด้งพร้อมกับจอเปลี่ยนขนาดแล้วช่องกระโดด */
+  document.addEventListener('click', function (e) {
+    if (!vq17FsWanted() || vq17FsEl()) return;
+    var t = e.target && e.target.closest ? e.target.closest('button, .choice, .tab, [role="button"]') : null;
+    if (!t || t.id === 'vq17-fs-btn') return;
+    vq17FsEnter();
+  }, true);
+}
+function vq17FsPaintSetting() {
+  var box = document.getElementById('set-fullscreen');
+  if (box) box.checked = vq17FsWanted();
+}
+
 vq17LoginSetup();
+vq17FullscreenSetup();
 })();
 
 </script>
