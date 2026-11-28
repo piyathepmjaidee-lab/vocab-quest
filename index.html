@@ -4681,6 +4681,177 @@ svg[data-farside], .atlas-postcard svg.atlas-painted[data-farside] { filter: sat
 .v11-art.v11-chapter-17{background-image:url("img/fc25db96b9f283c9.webp")}
 .v11-art.v11-chapter-18{background-image:url("img/bd7c6d149c881b9e.webp")}
 .v11-art.v11-chapter-19{background-image:url("img/d5ae870265e1d26e.webp")}
+/* ═══════════ V17 · หน้าเข้าเกมของภาค 2 (ดินแดนหลังแผนที่) ═══════════
+   แต่งหน้าเดิมทับด้วยคลาส .vq17 บน #screen-title — ไม่สร้างฟอร์มใหม่ ช่องรหัส/ปุ่มยังเป็นตัวเดิม (id เดิม)
+   inline style ของ #login-panel / .pin-box มาจากไฟล์ฐาน จึงต้องใช้ !important ทับ */
+
+#screen-title.vq17 {
+  --q-ink: #2f2a4a;
+  --q-ink-soft: #5b5478;
+  --q-gold: #c8963e;
+  --q-gold-hi: #e9c779;
+  --q-paper: rgba(255, 251, 243, .86);
+  --q-line: rgba(122, 104, 160, .28);
+  position: relative;
+  isolation: isolate;
+  background: #efe8f4 !important;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+/* ::before/::after ของหน้าแรกเป็นก้อนเมฆของธีมเดิม — ปิด แล้ววาดฉากด้วย .vq17-bg แทน */
+#screen-title.vq17::before, #screen-title.vq17::after { display: none !important; }
+.vq17 .vq17-bg { position: absolute; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+.vq17 .vq17-bg i { position: absolute; inset: 0; }
+.vq17 .vq17-bg .art {                         /* ภาพฉากเต็มจอ */
+  background: var(--vq17-art) center 35% / cover no-repeat;
+  animation: vq17-drift 38s ease-in-out infinite alternate;
+}
+.vq17 .vq17-bg .veil {                        /* ม่านกระดาษ: ซ้ายสว่างให้อ่านหัวเรื่องได้ */
+  background:
+    linear-gradient(90deg, rgba(250, 246, 252, .93) 0%, rgba(250, 246, 252, .72) 38%, rgba(250, 246, 252, .12) 70%, rgba(250, 246, 252, .05) 100%),
+    linear-gradient(0deg, rgba(47, 42, 74, .28), transparent 35%);
+  pointer-events: none;
+}
+@keyframes vq17-drift { from { background-position: 45% 35%; } to { background-position: 58% 30%; } }
+
+/* ── ฝั่งเรื่องราว ── */
+.vq17 .atlas-title-art,
+.vq17 .title-crest { display: none !important; }
+.vq17 .v82-title-story { background: none !important; box-shadow: none !important; border: 0 !important; }
+.vq17 .vq17-kicker {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: 700 12px/1 "Noto Sans Thai", sans-serif; letter-spacing: .18em;
+  color: #8a6420; text-transform: uppercase; margin: 4px 0 14px;
+  padding: 7px 14px 7px 12px; border-radius: 999px;
+  align-self: flex-start; justify-self: start; width: max-content; max-width: 100%;
+  background: rgba(255, 251, 243, .9); border: 1px solid rgba(200, 150, 62, .4);
+}
+.vq17 .vq17-kicker::before { content: "✦"; color: var(--q-gold); letter-spacing: 0; }
+.vq17 .title-main {
+  color: var(--q-ink) !important;
+  font-size: clamp(34px, 5.4vw, 58px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.01em;
+  margin: 0 0 12px !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .6);
+}
+.vq17 .title-main em { font-style: normal; color: var(--q-gold); }
+.vq17 .title-sub { color: var(--q-ink-soft) !important; letter-spacing: .04em !important; }
+.vq17 .vq17-facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 18px; }
+.vq17 .vq17-facts span {
+  padding: 6px 12px; border-radius: 999px;
+  background: rgba(255, 255, 255, .72); border: 1px solid var(--q-line);
+  color: var(--q-ink); font-size: 13px; font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+.vq17 .vq17-facts b { color: var(--q-gold); }
+.vq17 .v8-banner {
+  background: rgba(255, 255, 255, .62) !important;
+  border: 1px solid var(--q-line) !important;
+  border-left: 3px solid var(--q-gold) !important;
+  border-radius: 14px !important;
+  padding: 14px 16px !important;
+  backdrop-filter: blur(6px);
+  max-width: 420px;
+}
+.vq17 .v8-banner small { color: var(--q-gold) !important; letter-spacing: .14em !important; }
+.vq17 .v8-banner h2 { color: var(--q-ink) !important; font-size: 19px !important; margin: 4px 0 !important; }
+.vq17 .v8-banner p { color: var(--q-ink-soft) !important; }
+.vq17 .v8-banner .v8-btn.primary {
+  background: var(--q-ink) !important; color: #fff !important; border: 0 !important;
+}
+
+/* ── การ์ดเข้าเกม ── */
+.vq17 #login-panel {
+  position: relative;
+  background: var(--q-paper) !important;
+  border: 1px solid rgba(200, 150, 62, .45) !important;
+  border-radius: 22px !important;
+  padding: 34px 22px 22px !important;
+  box-shadow: 0 18px 50px -18px rgba(47, 42, 74, .45), inset 0 0 0 6px rgba(255, 255, 255, .45) !important;
+  backdrop-filter: blur(10px);
+  margin-top: 46px !important;
+}
+.vq17 #login-panel::before {                 /* เส้นหมึกดาวตกแต่งขอบบน */
+  content: "✦ ✦ ✦";
+  position: absolute; top: 12px; left: 0; right: 0;
+  text-align: center; font-size: 9px; letter-spacing: 10px; color: var(--q-gold-hi);
+}
+.vq17 .vq17-quill {
+  position: absolute; width: 92px; height: 92px; top: -64px; right: 14px;
+  background: var(--vq17-quill) center / contain no-repeat;
+  filter: drop-shadow(0 8px 10px rgba(47, 42, 74, .25));
+  animation: vq17-bob 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes vq17-bob { 50% { transform: translateY(-6px) rotate(-3deg); } }
+.vq17 .vq17-quill-say {
+  position: absolute; top: -46px; right: 116px; max-width: 200px;
+  background: #fff; color: var(--q-ink); font-size: 12.5px; line-height: 1.35;
+  padding: 7px 11px; border-radius: 12px 12px 2px 12px;
+  border: 1px solid var(--q-line); box-shadow: 0 6px 16px -8px rgba(47, 42, 74, .4);
+}
+.vq17 #login-panel > p { color: var(--q-ink) !important; font-size: 16px !important; }
+.vq17 .pin-box {
+  background: #fff !important;
+  color: var(--q-ink) !important;
+  border: 2px solid var(--q-line) !important;
+  border-radius: 14px !important;
+  box-shadow: inset 0 -3px 0 rgba(122, 104, 160, .12);
+  font-family: Georgia, "Times New Roman", serif !important;
+  caret-color: var(--q-gold);
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.vq17 .pin-box:focus {
+  outline: none; border-color: var(--q-gold) !important;
+  box-shadow: 0 0 0 4px rgba(200, 150, 62, .18), inset 0 -3px 0 rgba(200, 150, 62, .2);
+  transform: translateY(-2px);
+}
+.vq17 #btn-login-submit {
+  background: linear-gradient(180deg, #3b3560, var(--q-ink)) !important;
+  color: #fff !important; border: 0 !important; border-radius: 14px !important;
+  box-shadow: 0 6px 0 #1d1934, 0 12px 22px -10px rgba(47, 42, 74, .7) !important;
+  letter-spacing: .02em;
+}
+.vq17 #btn-login-submit::after { content: "  ✦"; color: var(--q-gold-hi); }
+.vq17 #btn-login-submit:active { transform: translateY(3px); box-shadow: 0 3px 0 #1d1934 !important; }
+.vq17 #btn-leaderboard-title {
+  background: rgba(255, 255, 255, .7) !important;
+  color: var(--q-ink) !important;
+  border: 1px solid var(--q-line) !important;
+  border-radius: 14px !important;
+}
+.vq17 .title-hof {
+  background: rgba(255, 251, 243, .78) !important;
+  border: 1px solid var(--q-line) !important;
+  backdrop-filter: blur(8px);
+}
+.vq17 .title-hint {
+  color: var(--q-ink) !important;
+  justify-self: center; width: max-content; max-width: 100%;
+  padding: 4px 12px; border-radius: 999px; background: rgba(255, 251, 243, .78);
+}
+
+/* ── มือถือ: ภาพอยู่บน ข้อความกับการ์ดอยู่ล่าง ── */
+/* ตรงข้ามกับเงื่อนไขสองคอลัมน์ของหน้าแรก: (min-width:960px), (min-width:640px) and (orientation:landscape) */
+@media (max-width: 959px) and (orientation: portrait), (max-width: 639px) {
+  .vq17 .vq17-bg .art { bottom: auto; height: 520px; background-position: 30% 0; animation: none; }
+  .vq17 .vq17-bg .veil {
+    background: linear-gradient(180deg, rgba(250, 246, 252, .15) 0%, rgba(250, 246, 252, .82) 30%, rgba(250, 246, 252, .95) 55%);
+  }
+  .vq17 .title-main { font-size: 34px !important; }
+  /* เด็กใช้มือถือเป็นหลัก: ช่องรหัสต้องอยู่ใต้หัวเรื่องทันที ไม่ต้องเลื่อนผ่านป้ายข่าวกับกระดานอันดับ */
+  .vq17 .v8-banner { display: none !important; }
+  .vq17 .vq17-facts { margin-bottom: 4px; }
+  .vq17 .v82-title-entry { display: flex !important; flex-direction: column; }
+  .vq17 .v82-title-entry #login-panel { order: -1; }
+  .vq17 .vq17-quill { width: 76px; height: 76px; top: -54px; right: 8px; }
+  .vq17 .vq17-quill-say { right: 86px; top: -34px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vq17 .vq17-bg .art, .vq17 .vq17-quill { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -22404,6 +22575,81 @@ v11AuraSetup();
 v11ReviewSetup();
 v12PetSetup();
 document.title='Vocab Quest V15 · ดินแดนหลังแผนที่';
+/* ═══════════ V17 · หน้าเข้าเกมของภาค 2 ═══════════
+   เรียกท้ายสุดของ closure (หลัง v12PetSetup ซึ่งหลัง v8/v8.2/v9 ที่สร้างฝั่งเรื่องราวของหน้าแรก)
+   เปลี่ยนแค่หน้าตา/ข้อความ ไม่แตะ .pin-box / #btn-login-submit / #title-total ที่โค้ดล็อกอินและ renderTitle ใช้
+   ภาพมาจาก STORY_EMBED (p2-step = ฉากเต็มจอ, portrait-quill = ควิลล์บนการ์ด) ไม่มีภาพ = หน้าเดิมแค่เปลี่ยนสี */
+function vq17LoginSetup() {
+  var scr = document.getElementById('screen-title');
+  if (!scr) return;
+  var art = (typeof STORY_EMBED !== 'undefined' && STORY_EMBED) || {};
+  scr.classList.add('vq17');
+  if (art['p2-step']) scr.style.setProperty('--vq17-art', 'url("' + art['p2-step'] + '")');
+  if (!scr.querySelector('.vq17-bg')) {
+    var bg = document.createElement('div');
+    bg.className = 'vq17-bg';
+    bg.setAttribute('aria-hidden', 'true');
+    bg.innerHTML = '<i class="art"></i><i class="veil"></i>';
+    scr.insertBefore(bg, scr.firstChild);
+  }
+
+  var story = scr.querySelector('.v82-title-story') || scr.querySelector('.title-wrap');
+  var h1 = scr.querySelector('.title-main');
+  if (h1) {
+    h1.innerHTML = 'ดินแดน<br><em>หลังแผนที่</em>';
+    if (!scr.querySelector('.vq17-kicker')) {
+      var k = document.createElement('div');
+      k.className = 'vq17-kicker';
+      k.textContent = 'ภาค 2 · Act II';
+      h1.parentNode.insertBefore(k, h1);
+    }
+  }
+  var sub = scr.querySelector('.title-sub');
+  var total = document.getElementById('title-total');
+  if (sub && total) {
+    // ต้องย้าย span#title-total ตัวเดิมเข้าไป ไม่ใช่สร้างใหม่ เพราะ renderTitle เขียนตัวเลขผ่าน id นี้
+    sub.textContent = 'VOCAB QUEST · ราชินีผีเสื้อขโมยคำไปซ่อนไว้ด้านหลังแผนที่ ';
+    total.hidden = true;
+    sub.appendChild(total);
+  }
+  if (sub && !scr.querySelector('.vq17-facts')) {
+    var facts = document.createElement('div');
+    facts.className = 'vq17-facts';
+    facts.innerHTML = '<span><b>' + VOCAB.length.toLocaleString('th-TH') + '</b> คำ</span>' +
+      '<span><b>20</b> บท</span><span><b>' + ZONE_COUNT + '</b> ด่าน</span><span>✨ ต้นไม้ดวงดาว</span>';
+    sub.parentNode.insertBefore(facts, sub.nextSibling);
+  }
+  var banner = scr.querySelector('.v8-banner');
+  if (banner) {
+    var sm = banner.querySelector('small'), h2 = banner.querySelector('h2'), p = banner.querySelector('p');
+    var added = (typeof VQ17_ON !== 'undefined' && VQ17_ON && typeof VQ17_WORDS !== 'undefined') ? VQ17_WORDS.length : 0;
+    if (sm) sm.textContent = 'ACT II · THE BACKSIDE OF THE MAP';
+    if (h2) h2.textContent = added ? 'คำใหม่ ' + added + ' คำ รออยู่ในบท 11–20' : 'บท 11–20 เปิดแล้ว';
+    if (p) p.textContent = 'คำจาก Oxford 3000 & Cambridge 2000 · ช่วยควิลล์เรียกชื่อผู้พิทักษ์ที่ถูกลืมกลับมา';
+  }
+
+  var panel = document.getElementById('login-panel');
+  if (panel && !panel.querySelector('.vq17-quill')) {
+    var bird = document.createElement('div');
+    bird.className = 'vq17-quill';
+    bird.setAttribute('aria-hidden', 'true');
+    if (art['portrait-quill']) bird.style.setProperty('--vq17-quill', 'url("' + art['portrait-quill'] + '")');
+    else bird.hidden = true;
+    var say = document.createElement('div');
+    say.className = 'vq17-quill-say';
+    say.textContent = 'ใส่รหัสแล้วพาฉันข้ามขอบแผนที่ทีนะ!';
+    if (bird.hidden) say.hidden = true;
+    panel.insertBefore(say, panel.firstChild);
+    panel.insertBefore(bird, panel.firstChild);
+    var label = panel.querySelector('p');
+    if (label) label.textContent = 'รหัสนักเดินทาง 4 หลัก';
+    var go = document.getElementById('btn-login-submit');
+    if (go) go.textContent = 'ก้าวเข้าแผนที่';
+  }
+  if (story) story.classList.add('vq17-story');
+}
+
+vq17LoginSetup();
 })();
 
 </script>
