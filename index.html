@@ -21422,6 +21422,106 @@ function vq16OvercapSetup() {
 
 vq16OvercapSetup();
 /* V16_OVERCAP_END */
+/* V16_PETPROOF_BEGIN */
+/* ─────────── V16 ป้ายหลักฐานสัตว์เลี้ยง ───────────
+   ในรอบที่เก็บ "คำชำนาญยาก" ให้สัตว์เลี้ยงได้ (โหมดยาก ด่านที่เคยผ่าน พาสัตว์เลี้ยงไป) ผู้เล่นเคยแยกไม่ออก
+   ว่าข้อไหนห้ามใช้คัมภีร์ ไฟล์นี้จึงบอกทีละข้อ:
+   · ข้อที่ยังเก็บได้ → การ์ดโจทย์ขอบเขียวอมฟ้า + ป้าย "🐾 หลักฐาน n/3 · ห้ามใช้คัมภีร์" + จุด 🐾 บนปุ่มคัมภีร์
+   · กดคัมภีร์ในข้อนั้น → ครั้งแรกแค่เตือน ต้องแตะซ้ำภายในข้อเดียวกันจึงใช้จริง
+   · ตอบถูก → ป้าย "+1 หลักฐาน" · ผิดหรือใช้คัมภีร์แล้ว → ป้ายเทา "รอบนี้ไม่นับคำนี้แล้ว"
+   ข้อที่ไม่เกี่ยว (คำทบทวน คำนอกด่าน คำที่ครบ 3/3 แล้ว รอบที่ไม่เข้าเงื่อนไข) ไม่มีป้าย ไม่รบกวน
+   กติกาการนับยังเป็นของ v12PetAnswer/commit เดิมทุกอย่าง ไฟล์นี้แค่อ่านแล้วแสดง */
+var VQ16_PROOF_CSS =
+  // วางคร่อมขอบบนของการ์ด ไม่ทับบรรทัด "คำศัพท์นี้แปลว่าอะไร" บนจอมือถือ
+  '.word-card .v16-proof{position:absolute;top:-10px;right:10px;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.25);font-size:10.5px;font-weight:700;line-height:1;padding:4px 7px;border-radius:999px;' +
+  'background:#0f8f7e;color:#fff;border:1px solid #0b6f62;pointer-events:none;white-space:nowrap}' +
+  '.word-card .v16-proof.lost{background:#7c7c92;border-color:#66667a}' +
+  '.word-card .v16-proof.got{background:#1f9d5c;border-color:#17804a;animation:v16pop .45s ease-out}' +
+  '.word-card.v16-proof-live{border-color:rgba(64,214,190,.7);box-shadow:0 0 0 1px rgba(64,214,190,.25) inset,0 0 14px rgba(64,214,190,.18)}' +
+  '.item-btn.v16-guard{position:relative}' +
+  '.item-btn.v16-guard::after{content:"🐾";position:absolute;top:-6px;left:-4px;font-size:12px;filter:drop-shadow(0 0 2px #000)}' +
+  '.item-btn.v16-guard.armed{outline:2px solid #ffcf5c;outline-offset:1px}' +
+  '@keyframes v16pop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}' +
+  '@media (max-width:420px){.word-card .v16-proof{font-size:9.5px;padding:3px 6px}}';
+
+/* สถานะของข้อปัจจุบัน: null = ไม่เกี่ยว · {live,n} = ยังเก็บได้ (มีหลักฐาน n/3) · {lost} = รอบนี้หมดสิทธิ์ */
+function vq16ProofState() {
+  if (!B || !B.v12PetRun || !B.v12PetRun.eligible || B.isReviewQ || B.pool.indexOf(B.word) < 0) return null;
+  var r = B.v12PetRun, p = petBox().own[r.sp];
+  if (!p) return null;
+  var old = p.hardMastery && p.hardMastery[B.word], n = Array.isArray(old) ? Math.min(3, Math.max(0, old[0] || 0)) : 0;
+  if (n >= 3) return null;
+  if (r.answers[B.word] === false || B.hintOn) return { lost: true, n: n };
+  return { live: true, n: n };
+}
+function vq16ProofPaint(got) {
+  var card = $('word') && $('word').parentNode;
+  if (!card) return;
+  var pill = card.querySelector('.v16-proof');
+  if (!pill) { pill = document.createElement('div'); pill.className = 'v16-proof'; card.appendChild(pill); }
+  var s = vq16ProofState();
+  card.classList.toggle('v16-proof-live', !!(s && s.live && !got));
+  if (got) {
+    pill.hidden = false; pill.className = 'v16-proof got';
+    pill.textContent = '🐾 +1 หลักฐาน (' + Math.min(3, got) + '/3)';
+  } else if (!s) {
+    pill.hidden = true;
+  } else if (s.lost) {
+    pill.hidden = false; pill.className = 'v16-proof lost';
+    pill.textContent = '🐾 รอบนี้ไม่นับคำนี้แล้ว';
+  } else {
+    pill.hidden = false; pill.className = 'v16-proof';
+    pill.textContent = '🐾 หลักฐาน ' + s.n + '/3 · ห้ามใช้คัมภีร์';
+  }
+  var bar = $('item-bar');
+  if (bar) SHOP.forEach(function (it, k) {
+    var b = bar.children[k];
+    if (!b || it.key !== 'hint') return;
+    b.classList.toggle('v16-guard', !!(s && s.live && !got));
+    b.classList.toggle('armed', !!(s && s.live && !got && B.v16Armed === B.q));
+  });
+}
+
+function vq16PetProofSetup() {
+  var st = document.createElement('style');
+  st.id = 'v16-pet-proof-style';
+  st.textContent = VQ16_PROOF_CSS;
+  document.head.appendChild(st);
+
+  var rqBase = renderQuestion;
+  renderQuestion = function () { var out = rqBase.apply(this, arguments); vq16ProofPaint(); return out; };
+  var barBase = renderItemBar;
+  renderItemBar = function () { var out = barBase.apply(this, arguments); if (B && B.word >= 0) vq16ProofPaint(); return out; };
+
+  var useBase = useItem;
+  useItem = function (key) {
+    if (key === 'hint' && B && !B.locked && !B.hintOn) {
+      var s = vq16ProofState();
+      if (s && s.live && B.v16Armed !== B.q) {
+        B.v16Armed = B.q;
+        toast('🐾 คำนี้กำลังเก็บหลักฐานให้' + petTitle(activePet()) + ' ถ้าใช้คัมภีร์จะไม่นับ · แตะอีกครั้งเพื่อใช้');
+        vq16ProofPaint();
+        return;
+      }
+    }
+    var out = useBase.apply(this, arguments);
+    if (key === 'hint') vq16ProofPaint();
+    return out;
+  };
+
+  var ansBase = v12PetAnswer;
+  v12PetAnswer = function (ok) {
+    // คำเดียวกันถามซ้ำในรอบเดียวได้หลักฐานแค่ครั้งเดียว จึงฉลอง +1 เฉพาะครั้งแรกที่ตอบผ่าน
+    var s = vq16ProofState(), before = s && B.v12PetRun.answers[B.word];
+    var out = ansBase.apply(this, arguments);
+    if (s && s.live && before !== true && B && B.v12PetRun && B.v12PetRun.answers[B.word] === true) vq16ProofPaint(s.n + 1);
+    else vq16ProofPaint();
+    return out;
+  };
+}
+
+vq16PetProofSetup();
+/* V16_PETPROOF_END */
 init();
 v8Setup();
 fashionStudioSetup();
