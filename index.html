@@ -22587,6 +22587,59 @@ function vq16PetProofSetup() {
 
 vq16PetProofSetup();
 /* V16_PETPROOF_END */
+/* V18_REPLAY_BEGIN */
+/* ─────────── V18 ปุ่ม "เล่นซ้ำด่านนี้" บนหน้าสรุปผล ───────────
+   เดิมชนะแล้วมีแค่ "สเตจถัดไป" กับ "กลับแผนที่" อยากเก็บหลักฐานคำชำนาญยากให้สัตว์เลี้ยงซ้ำด่านเดิม
+   ต้องกลับแผนที่ → แตะด่าน → เลือกโหมดใหม่ทุกรอบ ปุ่มนี้เริ่มสเตจเดิมด้วยโหมดเดิม (ง่าย/ยาก) ทันที
+   · โชว์เฉพาะตอนชนะในด่านปกติ (แพ้มี "ฝึกอีกครั้ง" อยู่แล้ว · หอทบทวนมี "ทบทวนอีกรอบ" · โหมดซ้อมไม่โชว์)
+   · เรียก startBattle แบบเดียวกับปุ่ม "ไปต่อ" เดิม จึงผ่านกติกาเรื่องราว/สัตว์เลี้ยง/การนับหลักฐานเดิมทุกอย่าง */
+var VQ18_REPLAY_CSS =
+  // 🐾 เป็นป้ายมุมแบบเดียวกับปุ่มคัมภีร์ใน V16 — ใส่ในข้อความแล้วล้นปุ่มบนจอมือถือ 375px
+  '#btn-result-replay{white-space:nowrap;position:relative}' +
+  '#btn-result-replay.v18-proof{border-color:rgba(64,214,190,.85);box-shadow:0 0 0 1px rgba(64,214,190,.3) inset}' +
+  '#btn-result-replay.v18-proof::after{content:"🐾";position:absolute;top:-7px;left:-4px;font-size:13px;filter:drop-shadow(0 0 2px rgba(0,0,0,.35))}';
+
+function vq18ReplaySetup() {
+  var next = $('btn-result-next');
+  if (!next || $('btn-result-replay')) return;
+  var st = document.createElement('style');
+  st.id = 'v18-replay-style';
+  st.textContent = VQ18_REPLAY_CSS;
+  document.head.appendChild(st);
+
+  var btn = document.createElement('button');
+  btn.className = 'btn btn-ghost';
+  btn.id = 'btn-result-replay';
+  btn.hidden = true;
+  btn.textContent = '🔁 เล่นซ้ำ';
+  next.parentNode.insertBefore(btn, next);
+
+  var again = null;   // {z, s, hard} ของรอบที่เพิ่งจบ
+  btn.addEventListener('click', function () {
+    if (!again) return;
+    var a = again;
+    again = null;
+    closeResult();
+    SFX.ui();
+    startBattle(a.z, a.s, null, false, a.hard);
+  });
+
+  var base = showResult;
+  showResult = function (win) {
+    var out = base.apply(this, arguments);
+    var ok = !!(win && B && !B.review && !v8Practice);
+    again = ok ? { z: B.zone, s: B.stage, hard: !!B.hard } : null;
+    btn.hidden = !ok;
+    // รอบหน้าเข้าเงื่อนไขเก็บหลักฐาน (โหมดยาก + พาสัตว์เลี้ยง + สเตจนี้ผ่านแล้ว) → บอกให้รู้ว่ากดแล้วได้อะไร
+    var proof = ok && B.hard && B.pet;
+    btn.title = proof ? 'เล่นสเตจนี้อีกรอบในโหมดยาก เก็บหลักฐานคำชำนาญให้สัตว์เลี้ยง' : 'เล่นสเตจนี้อีกรอบด้วยโหมดเดิม';
+    btn.classList.toggle('v18-proof', !!proof);
+    return out;
+  };
+}
+
+vq18ReplaySetup();
+/* V18_REPLAY_END */
 init();
 v8Setup();
 fashionStudioSetup();
