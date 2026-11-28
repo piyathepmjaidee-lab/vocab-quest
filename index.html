@@ -19663,7 +19663,7 @@ var forms={
  luna:[['จิ้งจอกมงกุฎจันทร์','กระเป๋าจันทรา',5,{gold:3}],['จิ้งจอกเก้าดาว','โชคจากหมู่ดาว',5,{gold:5,gauge:5}],['เทพจิ้งจอกดารานิรันดร์','ดาวตกนำโชค',5,{gold:7,damage:.15}]]
 };
 var gates=[{lv:26,words:18,chapters:2},{lv:36,words:45,chapters:4},{lv:48,words:90,chapters:6}];
-function summary(p){var words=0,one=0,two=0,chap={},book=p&&p.hardMastery||{};Object.keys(book).forEach(function(k){var v=book[k];if(Array.isArray(v)&&Number.isInteger(v[1])&&v[1]>=0&&v[1]<10){if(v[0]===1)one++;if(v[0]===2)two++;if(v[0]>=3){words++;chap[v[1]]=(chap[v[1]]||0)+1;}}});return {words:words,one:one,two:two,chapters:Object.keys(chap).filter(function(k){return chap[k]>=3;}).length,byChapter:chap};}
+function summary(p){var words=0,one=0,two=0,chap={},book=p&&p.hardMastery||{};Object.keys(book).forEach(function(k){var v=book[k];if(Array.isArray(v)&&Number.isInteger(v[1])&&v[1]>=0&&v[1]<20){if(v[0]===1)one++;if(v[0]===2)two++;if(v[0]>=3){words++;chap[v[1]]=(chap[v[1]]||0)+1;}}});return {words:words,one:one,two:two,chapters:Object.keys(chap).filter(function(k){return chap[k]>=3;}).length,byChapter:chap};}
 function commit(p,run,win){
  var out={proofs:0,words:0};if(!run||run.settled)return out;run.settled=true;
  if(!p||!win||!run.eligible||p.sp!==run.sp)return out;
